@@ -30,6 +30,20 @@ Consider the following five questions to cover the major HDFS topics:
 4. **High Availability :**  Outline HDFS High Availability (Active/Standby NameNode, JournalNodes). How do these features improve scalability and uptime?
 5. **Protocol & Operations:**  Describe how clients read and write data to HDFS via RPC, how they locate NameNodes and DataNodes, how DataNodes send block reports, and why these mechanisms matter for everyday operations. Cover the runtime behaviour of leases and pipeline formation.
 
+## Core Concepts - Answers :elephant::elephant::elephant:
+
+1. **Architecture & Roles:**
+HDFS stands for Hadoop Distributed Filesystem.\
+HDFS architecture works in a master-slave pattern.
+- Blocks - A disk  has a block size, which is the minimum amount of data that it can read or write. HDFS, too, has a concept of a block, but it much larger - 128MB by default (normally a disk block is 512 bytes). A file that is smaller than a single block does not occupy a full block's, its uses 1MB of disk space. HDFS blocks are large compared to disk blocks, because it minimized the cost of seeks.
+- Name Node (master) - Master server that manages file system namespace and regulate access to files by clients. The name node is responsible for all client operations in the cluster. It does not store block locations persistantly, because this information is reconstructed from datanodes when the system starts.\
+- Data Nodes (slaves) - serves read or write requests, it also creates, deletes, and replicates blocks based on the instructions from the name node. They report back to the namenode periodically with lists of blocks that they are storing.
+- namespace - The hierarchy of where data is stored. Allows user data to be stores in files. The namenode manages the file system namespace allowing the clients to work with files and directories with operations of create, remove, move, rename, etc. NameNode maintains file system namespace. Any changes to file system namespace or its properties is recorded by the NameNode and also it has replication factor - number of copies of a file.
+
+4. **High Availability :**
+Without the namenode, the filesystem cannot be used, all the files on the filesystem would be lost since there would be no way knowing how to reconstruct the files from the blocks on the datanodes. To solve this there are two mechanisms: Backup up files that make up the persistent state of the filesystem metadata. Can be written to local disk as well as remote NFS mount.
+Another way is a secondery namenode which also called the standby node. The standby node reads the changes made to edit logs and applies it to its own namespace in a consistent manner. In event of a failover the standby node will ensure that is has read all the edits before promoting itself to the active state. This is a manual process which has to be performed by admin unless you have a zookeeper which manages failovers automatically with failover controllers. The zookeeper periodically managing health checks to the namenode and when the master will marked as unhealthy a new name node will be elected.
+
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between HDFS and an industry alternative.
 - Deliverable: A written summary (minimum 1 or 2 sentences).
