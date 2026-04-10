@@ -35,14 +35,58 @@ Consider the following five questions to cover the major HDFS topics:
 1. **Architecture & Roles:**
 HDFS stands for Hadoop Distributed Filesystem.\
 HDFS architecture works in a master-slave pattern.
-- Blocks - A disk  has a block size, which is the minimum amount of data that it can read or write. HDFS, too, has a concept of a block, but it much larger - 128MB by default (normally a disk block is 512 bytes). A file that is smaller than a single block does not occupy a full block's, its uses 1MB of disk space. HDFS blocks are large compared to disk blocks, because it minimized the cost of seeks.
 - Name Node (master) - Master server that manages file system namespace and regulate access to files by clients. The name node is responsible for all client operations in the cluster. It does not store block locations persistantly, because this information is reconstructed from datanodes when the system starts.\
-- Data Nodes (slaves) - serves read or write requests, it also creates, deletes, and replicates blocks based on the instructions from the name node. They report back to the namenode periodically with lists of blocks that they are storing.
-- namespace - The hierarchy of where data is stored. Allows user data to be stores in files. The namenode manages the file system namespace allowing the clients to work with files and directories with operations of create, remove, move, rename, etc. NameNode maintains file system namespace. Any changes to file system namespace or its properties is recorded by the NameNode and also it has replication factor - number of copies of a file.
+Namenode keeping the entire metadata in the memory, while Fsimage and editlogs in the disk for rebuilding RAM state.
+- Data Nodes (slaves) - serves read or write requests, it also creates, deletes, and replicates blocks based on the instructions from the name node. They report back to the namenode periodically with lists of blocks that they are storing.\
+Datanodes stores the blocks of the actual data.
+- Metadata management - The metadata is managed entirely by the namenode to optimize performance and scalability. It allows clients to quickly locate and access data blocks across the cluster. In context of HDFS, metadata would be file and directory names, block mapping, file size, block size, replication factor, ownweship and permissions, modification timestamps, quotas. The metadata can be stored in 3 storage components:
+    1. fsimage - a snapshot of the entire file system metadata, stored on disk.
+    2. edit log - a transaction log of all changes made since the last fsimage checkpoint
+    3. In-memory storage - The NameNode loads the combined fsimage+edits into RAM for fast access.
+- namespace - The namnode is also responsible for the HDFS namespace in the cluster. The namespace is set at the file level, meaning all files are hierarchical and follow a tree structure. Namenode keeps a reference to every file and block in the filesystem in memory, which means that on very large clusters with many files, memory becomes the limiting factor for scaling. This was a new change in HDFS 2.x of HDFS federation. It allows the clusters to add namenodes, each of which manages a portion of the filesystem namespace. Under federation, each namenode manages a namespace volume, which is made up of the metadata for the namespace, and metadata of it own block pool (set of block that belongs to a single namespace). Namespace volumes are independent of each other, which means namenodes do not communicate with one another and does not impact when one fails.
+
+2. **Storage & Fault Tolerance:**
+- how HDFS divides files into blocks - A disk  has a block size, which is the minimum amount of data that it can read or write. HDFS, too, has a concept of a block, but it much larger - 128MB by default (normally a disk block is 512 bytes). A file that is smaller than a single block does not occupy a full block's, its uses 1MB of disk space. HDFS blocks are large compared to disk blocks, because it minimized the cost of seeks.
+- HDFS Replication - HDFS is designed to reliably store very large files across machines in a large cluster. It stores each file as a sequence of blocks. All blocks in the same size. The blocks of a file are replicated for fault tolerance. The block size and replication factor are configurable per file. An application can specify the number of replicas of a file. The replication factor can be specified at file creation time and can be changed later. The NameNode makes all decisions regarding replication of blocks. It periodically receives a Heartbeat and a Blockreport from each of the DataNodes in the cluster. A Blockreport contains a list of all blocks on a DataNode. 
+- Safemode - On startup, the NameNode enters a special state called Safemode. Replication of data blocks does not occur when the NameNode is in the Safemode state. The NameNode receives Heartbeat and Blockreport messages from the DataNodes. Each block has a specified minimum number of replicas. A block is considered safely replicated when the minimum number of replicas of that data block has checked in with the NameNode. After a configurable percentage of safely replicated data blocks checks in with the NameNode (plus an additional 30 seconds), the NameNode exits the Safemode state. The NameNode then replicates the blocks that still have fewer then the specified number to other DataNodes. The default factor of replication is 3 I explain it in question 3.
+- how it detects and recovers from node failures - 
+Each DataNode sends a Heartbeat message to the NameNode periodically. A network partition can cause a subset of DataNodes to lose connectivity with the NameNode. The NameNode detects this condition by the absence of a Heartbeat message, marks them as dead. This cause the replication factor of some blocks to fall below their specified value. The necessity for re-replication may arise due to many reasons: a DataNode may become unavailable, a replica may become corrupted, a hard disk on a DataNode may fail, or the replication factor of a file may be increased.
+
+3. **Topology Awareness & Performance:** 
+- What is rack awareness and why does HDFS replicate across racks? HDFS is used in clustered environment where we have clusters, each cluster will have multiple racks, each rack will have multiple datanodes.
+rack - group of datanodes (around 30-40). hdfs uses feature called rack awareness to improve speed and efficiency. It means the NameNode knows where each DataNode is located (which rack) and uses this to decide where to store data and its copies. There are Rack  Awareness policies to decide where these replicas go. Rack Awareness Rules Followed Here:
+    - No more than 1 replica is placed on the same DataNode.
+    - No more than 2 replicas of a block are on the same rack.
+    - Replicas are distributed across multiple racks for fault tolerance.
+
+So to make HDFS fault tolerant in your cluster you need to consider following failures-
+    - DataNode Failure
+    - rack failure
+So you need to recover from both situations:
+    - if one DataNode fails, you can get the same data from another DataNode.
+    - If the entire Rack fails, you can get the same data from another Rack
+
+So thats why we need rack awarness and it's policies and a replication factor of at least 3, so that not to replicas goes to the same datanode and at least 1 replica goes to different rack to fullfil the fault-tolerance.
+- how do block placement, snapshots, and checksums contribute to performance and data integrity?
+    - checksums - It is possible that a block of data fetched from a DataNode arrives corrupted. This corruption can occur because of faults in a storage device, network faults, or buggy software. The HDFS client software implements checksum checking on the contents of HDFS files. When a client creates an HDFS file, it computes a checksum of each block of the file and stores these checksums in a separate hidden file in the same HDFS namespace. When a client retrieves file contents it verifies that the data it received from each DataNode matches the checksum stored in the associated checksum file. If not, then the client can opt to retrieve that block from another DataNode that has a replica of that block. 
+    - snapshots - Snapshots support storing a copy of data at a particular instant of time. One usage of the snapshot feature may be to roll back a corrupted HDFS instance to a previously known good point in time. 
+    - block placement - needs to read about block placement policies.
 
 4. **High Availability :**
 Without the namenode, the filesystem cannot be used, all the files on the filesystem would be lost since there would be no way knowing how to reconstruct the files from the blocks on the datanodes. To solve this there are two mechanisms: Backup up files that make up the persistent state of the filesystem metadata. Can be written to local disk as well as remote NFS mount.
-Another way is a secondery namenode which also called the standby node. The standby node reads the changes made to edit logs and applies it to its own namespace in a consistent manner. In event of a failover the standby node will ensure that is has read all the edits before promoting itself to the active state. This is a manual process which has to be performed by admin unless you have a zookeeper which manages failovers automatically with failover controllers. The zookeeper periodically managing health checks to the namenode and when the master will marked as unhealthy a new name node will be elected.
+Another way is a secondery namenode which also called the standby node. The standby node reads the changes made to edit logs and applies it to its own namespace in a consistent manner. In event of a failover the standby node will ensure that it has read all the edits before promoting itself to the active state. This is a manual process which has to be performed by admin unless you have a zookeeper which manages failovers automatically with failover controllers. The zookeeper periodically managing health checks to the namenode and when the master will marked as unhealthy a new name node will be elected.
+To manae HA there are few changes that needs to be configure:
+    - The namenodes must use highly avalible shared storage to share edit logs.
+    - Datanodes must send block reports to both namenodes because the block mappings are stored in a namenode’s memory, and not on disk.
+    - Clients must be configured to handle namenode failover, using a mechanism that is transparent to users.
+    - The secondary namenode’s role is subsumed by the standby, which takes periodic checkpoints of the active namenode’s namespace.
+
+The first point of HA shared storage is recommanded to be solved with QJM (Quorum journal manager). It runs a group of journal nodes and each edit must be written to a majority of the journal nodes. Its does not use zookeeper. The edit logs are written to the local namenode and to the journalnode, but an operation will be committed only with the quorum of the journal nodes.
+
+5. **Protocol & Operations:**
+- how clients read and write data to HDFS via RPC?
+- how they locate NameNodes and DataNodes?
+- how DataNodes send block reports?
 
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between HDFS and an industry alternative.
