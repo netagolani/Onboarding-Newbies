@@ -44,6 +44,7 @@ Datanodes stores the blocks of the actual data.
     2. edit log - a transaction log of all changes made since the last fsimage checkpoint
     3. In-memory storage - The NameNode loads the combined fsimage+edits into RAM for fast access.
 - namespace - The namnode is also responsible for the HDFS namespace in the cluster. The namespace is set at the file level, meaning all files are hierarchical and follow a tree structure. Namenode keeps a reference to every file and block in the filesystem in memory, which means that on very large clusters with many files, memory becomes the limiting factor for scaling. This was a new change in HDFS 2.x of HDFS federation. It allows the clusters to add namenodes, each of which manages a portion of the filesystem namespace. Under federation, each namenode manages a namespace volume, which is made up of the metadata for the namespace, and metadata of it own block pool (set of block that belongs to a single namespace). Namespace volumes are independent of each other, which means namenodes do not communicate with one another and does not impact when one fails.
+- Leases - Before a client can write an HDFS file, it must obtain a lease, which is essentially a lock. This ensures the single-writer semantics. The lease must be renewed within a predefined period of time if the client wishes to keep writing. If a lease is not explicitly renewed or the client holding it dies, then it will expire. When this happens, HDFS will close the file and release the lease on behalf of the client so that other clients can write to the file. This process is called lease recovery.
 
 2. **Storage & Fault Tolerance:**
 - how HDFS divides files into blocks - A disk  has a block size, which is the minimum amount of data that it can read or write. HDFS, too, has a concept of a block, but it much larger - 128MB by default (normally a disk block is 512 bytes). A file that is smaller than a single block does not occupy a full block's, its uses 1MB of disk space. HDFS blocks are large compared to disk blocks, because it minimized the cost of seeks.
@@ -70,7 +71,7 @@ So thats why we need rack awarness and it's policies and a replication factor of
 - how do block placement, snapshots, and checksums contribute to performance and data integrity?
     - checksums - It is possible that a block of data fetched from a DataNode arrives corrupted. This corruption can occur because of faults in a storage device, network faults, or buggy software. The HDFS client software implements checksum checking on the contents of HDFS files. When a client creates an HDFS file, it computes a checksum of each block of the file and stores these checksums in a separate hidden file in the same HDFS namespace. When a client retrieves file contents it verifies that the data it received from each DataNode matches the checksum stored in the associated checksum file. If not, then the client can opt to retrieve that block from another DataNode that has a replica of that block. 
     - snapshots - Snapshots support storing a copy of data at a particular instant of time. One usage of the snapshot feature may be to roll back a corrupted HDFS instance to a previously known good point in time. 
-    - block placement - needs to read about block placement policies.
+    - block/replica placement - first replica on the same node of the client, if the client is outside the cluster so randomly. Second replica is off-rack (a different rack), chosen randomly. Third replica is placed on the same rack as the second, but on a different node chosen randomly.
 
 4. **High Availability :**
 Without the namenode, the filesystem cannot be used, all the files on the filesystem would be lost since there would be no way knowing how to reconstruct the files from the blocks on the datanodes. To solve this there are two mechanisms: Backup up files that make up the persistent state of the filesystem metadata. Can be written to local disk as well as remote NFS mount.
@@ -84,9 +85,27 @@ To manae HA there are few changes that needs to be configure:
 The first point of HA shared storage is recommanded to be solved with QJM (Quorum journal manager). It runs a group of journal nodes and each edit must be written to a majority of the journal nodes. Its does not use zookeeper. The edit logs are written to the local namenode and to the journalnode, but an operation will be committed only with the quorum of the journal nodes.
 
 5. **Protocol & Operations:**
-- how clients read and write data to HDFS via RPC?
+- how clients read and write data to HDFS via RPC?\
+RPC - Remote Procedure Call, is a way for a program to run a function on another computer in a network as if it were local. The client sends the request (with arguments) to the server, the server executes the function, and the result is sent back.\
+    - Read to HDFS - 
+        1. open - The client requests from DFS to open() a file.
+        2. get block locations - The DFS calls the namenode using RPC to get block locations (to each block - the addresses of the datanodes that have a copy of that block orders by proximity to the client)
+        3. read to stream - client calls read() on the FSDataInputStream.
+        4. read to first datanode - Data is streamed from the datanode back to the client which calls read() repeatedly on the stream.
+        5. read next datanodes - When the end of the block is reached, it finds the best datanode for the next block.
+        6. close() the stream from FSDataInputStream.
+    - Write to HDFS -
+        1. create - on DFS.
+        2. create to NameNode - DFS makes an RPC call to the namnode for create. NameNode doinf checks that the file isnt already exist and right permissions. If passes the namenode make a record of the new file.
+        3. write to FSOutputStream - The client requests to write().
+        4. write packets - Data is split into packets and streamed through a pipeline of DataNodes, where each node stores the data and passes it to the next for replication.
+        5. ack packet - A packet is removed from the ack queue only when it has been acknowledged by all the datanodes in the pipeline.
+        6. close - the client calls close()
+        7. complete - after finished all acks to  signal complete and after that the namenode return succecfully.
 - how they locate NameNodes and DataNodes?
+The client locates Namenodes via api of HDFS creating a DFS object, needs to go through authentication of kerberos. Then the namenodes return the relevant block for the client and it does it operations with an input\output streamer. Because of the kereberos authentication it cannot connect the datanodes directly.
 - how DataNodes send block reports?
+The DataNodes send the block reports to the NameNodes just like they send their heartbeats. The block reports have information about list of blocks, block metadta and block health. Useful to track block locations, detect missing replicas, etc.
 
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between HDFS and an industry alternative.
