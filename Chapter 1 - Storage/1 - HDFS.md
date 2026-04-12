@@ -131,3 +131,30 @@ Review your answers with your mentor and discuss any unclear points. Relate thes
 ## Recommended Resources
 - [Official HDFS User Guide](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html)
 - [Hadoop: The Definitive Guide (O'Reilly)](https://piazza-resources.s3.amazonaws.com/ist3pwd6k8p5t/iu5gqbsh8re6mj/OReilly.Hadoop.The.Definitive.Guide.4th.Edition.2015.pdf)
+
+## HDFS Q&A Answers
+1. Describe the difference between file and directory? How the filesystem knows it directories?
+2. Commodity Hardware - sometimes known as off-the-shelf hardware, is a computer device or IT component that is relatively inexpensive, widely available and basically interchangeable with other hardware of its type.
+3. why we need HDFS? (instead of s3). Performance, data is stored and processed on the same machines, access and processing speed are faster.
+4. HDFS federation - multipule namespaces. The prior HDFS architecture allows only a single namespace for the entire cluster. In that configuration, a single Namenode manages the namespace. HDFS Federation addresses this limitation by adding support for multiple Namenodes/namespaces to HDFS. Block pool - is a set of blocks that belong to a single namespace. Datanodes store blocks for all the block pools in the cluster. A Namespace and its block pool together are called Namespace Volume. Key-Benefits: scalability and isolation. Generic storage service - block pool abstraction allows applications to built directly on the block storage layer without the need to use a file system interface.
+5. What is a block? How can I see block of HDFS?
+A block in hdfs is a file, I can go to the path of the blocks.
+6. How much metadata memory is allocated per file?
+7. What are the differences between 1 file of 1024MB to 8 files of 128MB and 1024 files of 1MB?
+8. Rack awarness default is to split 3 replicas in 3 different servers and thats because we have only 1 rack. How to configure rack awarness?
+9. What happens if datanode fail in a middle of writing? 
+    - The write is interrupted. 
+    - The client is notified of the failure. 
+    - HDFS automatically excludes the failed DataNode. - The NameNode reconstructs a new pipline with other healthy datanodes.
+    - The client retries the block write from where it left off.
+10. Quota in HDFS - quota in hdfs can be name quotas, space quotas, storage type quotas. 
+    - name quota - hard limit on the number of file and directory names in the tree rooted at that directory. File and directory creations fail if the quota would be exceeded. 
+    - space quota - The space quota is a hard limit on the number of bytes used by files in the tree rooted at that directory.
+    - The storage type quota is a hard limit on the usage of specific storage type (SSD, DISK, ARCHIVE) by files in the tree rooted at the directory. 
+11. - fsimage - a file that represents a point-in-time snapshot of the filesystem’s metadata.
+    - edit-logs - the NameNode maintains a log of all the changes made to the file system, called the edit log. The edit log can become quite large over time, which can slow down the performance of the NameNode.
+    - audit-logs - HDFS has two different audit logs, hdfs-audit.log for user activity and SecurityAuth-hdfs.audit for service activity. Both of these logs are implemented with Apache Log4j, a common and well known mechanism for logging in Java.
+12. How they are implemented in the read write operations?
+13. Checkpoints -  Checkpointing is a process that takes an fsimage and edit log and compacts them into a new fsimage. This way, instead of replaying a potentially unbounded edit log, the NameNode can load the final in-memory state directly from the fsimage. This is a far more efficient operation and reduces NameNode startup time. Checkpointing allows the NameNode to merge the edit log with the file system, which reduces the size of the log and improves the performance of the NameNode.
+
+
