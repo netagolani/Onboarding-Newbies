@@ -134,14 +134,24 @@ Review your answers with your mentor and discuss any unclear points. Relate thes
 
 ## HDFS Q&A Answers
 1. Describe the difference between file and directory? How the filesystem knows it directories?
+A directory is technically just a file containing file names, their inode numbers, and attributes. for example a client wants to read a file in the path /directory/file:
+    - Scan the directory / looking for an item named "directory". Get the associated inode number.
+    -  Scan the directory /directory looking for an item named "file" and get the associated inode number.
+    - Read the inode and get the file's metadata, permission bits, data location, etc.
 2. Commodity Hardware - sometimes known as off-the-shelf hardware, is a computer device or IT component that is relatively inexpensive, widely available and basically interchangeable with other hardware of its type.
 3. why we need HDFS? (instead of s3). Performance, data is stored and processed on the same machines, access and processing speed are faster.
 4. HDFS federation - multipule namespaces. The prior HDFS architecture allows only a single namespace for the entire cluster. In that configuration, a single Namenode manages the namespace. HDFS Federation addresses this limitation by adding support for multiple Namenodes/namespaces to HDFS. Block pool - is a set of blocks that belong to a single namespace. Datanodes store blocks for all the block pools in the cluster. A Namespace and its block pool together are called Namespace Volume. Key-Benefits: scalability and isolation. Generic storage service - block pool abstraction allows applications to built directly on the block storage layer without the need to use a file system interface.
 5. What is a block? How can I see block of HDFS?
 A block in hdfs is a file, I can go to the path of the blocks.
 6. How much metadata memory is allocated per file?
+As a rule of thumb, each object occupies approximately 150 bytes.
 7. What are the differences between 1 file of 1024MB to 8 files of 128MB and 1024 files of 1MB?
-8. Rack awarness default is to split 3 replicas in 3 different servers and thats because we have only 1 rack. How to configure rack awarness?
+the equation is: metadata of a file is = 150 bytes * (1 file inode + (number of blocks * replication factor))\
+1 scenrio: 150 *(1 + (2 * 3)) =  1050 bytes\
+2 scenrio: 150*(8 + (4*3)) = 3000 bytes\
+3 scenrio: 150 * (1024 + (1024*3)) = 614400 bytes\
+Great Article, writing it for me: https://www.cloudera.com/blog/technical/small-files-big-foils-addressing-the-associated-metadata-and-application-challenges.html
+8. Rack awareness default is to split 3 replicas in 3 different servers and thats because we have only 1 rack. How to configure rack awarness? According to Shabi we only have one rack, so the rack awareness aims to replicates the files in three different datanodes. To enable rack awareness in your Hadoop cluster, you can map hosts to racks and run a user-defined script to determine the mapping, enabling the data replicas to be placed intelligently. If a script is not specified, all hosts are mapped to a single network location, called /default-rack. 
 9. What happens if datanode fail in a middle of writing? 
     - The write is interrupted. 
     - The client is notified of the failure. 
@@ -155,6 +165,28 @@ A block in hdfs is a file, I can go to the path of the blocks.
     - edit-logs - the NameNode maintains a log of all the changes made to the file system, called the edit log. The edit log can become quite large over time, which can slow down the performance of the NameNode.
     - audit-logs - HDFS has two different audit logs, hdfs-audit.log for user activity and SecurityAuth-hdfs.audit for service activity. Both of these logs are implemented with Apache Log4j, a common and well known mechanism for logging in Java.
 12. How they are implemented in the read write operations?
+- write - 
+- read - 
 13. Checkpoints -  Checkpointing is a process that takes an fsimage and edit log and compacts them into a new fsimage. This way, instead of replaying a potentially unbounded edit log, the NameNode can load the final in-memory state directly from the fsimage. This is a far more efficient operation and reduces NameNode startup time. Checkpointing allows the NameNode to merge the edit log with the file system, which reduces the size of the log and improves the performance of the NameNode.
+14. How HDFS reads in a pararallize way?
+map reduce mechanism
 
+## Studing for Q&A 2
+1. Startup Process of NameNode (safemode) - 
+    - loaded its fsimage to memory
+    - replayed edit log
+    - received enough block reports from the datanodes and getting out of safemode.
+2. Automatic failover - Adds two new components to the HDFS. ZooKeeper Quorum & ZKFailoverController.
+    - Health monitoring - the ZKFC pings its local namenode periodically with healch-check command. If the node crashed, or otherwise entered an unhealthy state and marked as unhealthy.
+    - Failover Detection - When the machine craches, the session with the zookeeper is expired, notifying hte other NameNode that a failover should be triggered.
+    - Active NameNode Election - Having election the other namenode succeed by creating a zookeeper lock and become the next active.
+Manually failover - in order to do manual failover we need to run this command hdfs haadmin -failover -forceactive namenode1(active) namenode1(standby).
+In hadoop 1 the seconderyNameNode was only used for checkpoints. So the administrator would have to manually restart the NameNode. In hadoop 2 we need to run the command.
+3. Fencing - A fencing method is a method by which one node can forcibly prevent another node from making continued progress. This might be implemented by killing a process on the other node or by denying the other node's access to shared storage.
+Is a mechanism used to prevent or resolve split-brain scenarios, to ensure that only one namenode in the cluster remain active. Zookeeper provides a distributed locking mechanism that allows the active Hadoop NameNode to obtain a lock, while other NameNodes are fenced off in case of a network partition or failure.
+4. nameservice - instead of checking for active namenode host and port combination, we should use nameservice as, nameservice will automatically transfer client requests to active namenode. Acts like a proxy among NameNodes which always transfers the HDFS requests to the active namenode. Needs to be configured in the hdfs-site.xml.
+5. zookeeper responsibilities - 
+- failover controller - leader election
+- fencing - locking mechanism
+- configuration managment - ZooKeeper maintains configuration information, ensuring all nodes in a distributed system have consistent settings.
 
