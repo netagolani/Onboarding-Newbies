@@ -165,11 +165,15 @@ Great Article, writing it for me: https://www.cloudera.com/blog/technical/small-
     - edit-logs - the NameNode maintains a log of all the changes made to the file system, called the edit log. The edit log can become quite large over time, which can slow down the performance of the NameNode.
     - audit-logs - HDFS has two different audit logs, hdfs-audit.log for user activity and SecurityAuth-hdfs.audit for service activity. Both of these logs are implemented with Apache Log4j, a common and well known mechanism for logging in Java.
 12. How they are implemented in the read write operations?
-- write - 
-- read - 
+- audit-logs - in write and read
+- edit-logs - on writing when the file system has changed.
+- fsimage - periodically.
 13. Checkpoints -  Checkpointing is a process that takes an fsimage and edit log and compacts them into a new fsimage. This way, instead of replaying a potentially unbounded edit log, the NameNode can load the final in-memory state directly from the fsimage. This is a far more efficient operation and reduces NameNode startup time. Checkpointing allows the NameNode to merge the edit log with the file system, which reduces the size of the log and improves the performance of the NameNode.
 14. How HDFS reads in a pararallize way?
-map reduce mechanism
+It reads from multipule blocks from different nodes in the same time.
+15. Fencing mechanism in journal nodes - The journal nodes works in a way that only on node can write edit log in specific time.
+16. What additional information is sent in the heartbeat? The heartbeat also carries information lke total storage capacity, the usage of storage, and the number of data transfers currently in progres.
+17. Which component is doing the checkpoints? and when? the checkpoint is performed by standby nameNode or SeconderyNameNode (legacy). It happends by triggers. fs.checkpoint.period controls how often this reconciliation will be triggered. fs.checkpoint.size is a size threshold, which, if reached by edits, will trigger an immediate checkpoint regardless of time elapsed since the last checkpoint. 
 
 ## Studing for Q&A 2
 1. Startup Process of NameNode (safemode) - 
