@@ -84,6 +84,67 @@ Answer these five questions to cover HBase’s major areas:
 
 5. **Scalability & Operations:**  
    Discuss how HBase scales horizontally through region splitting and balancing, how it relies on HDFS for durability, and what administrative actions (snapshots, backups, schema changes, recovery) operators perform in production environments.
+
+### Part 2: Apache HBase (Implementation & Operations) - Answers
+
+1. **Architecture & Data Model:** 
+- overall architecture of Apache HBase -
+   - HBase stores data in tables, similar to traditional relational databases. Each table consists of rows and columns.
+   - Table - An HBase table consists of multiple rows. Table names are Strings and composed of characters that are safe for use in a file system path.
+   - Row - A row in HBase consists of a row key and one or more columns with values associated with them. Rows are sorted alphabetically by the row key as they are stored.
+   - Row key - unique ID of row in relational DB, but in Hbase Its the key which represents the row. Row keys do not have a data type and are always treated as a byte[ ] (byte array).
+   - column - column-family:column-qualifier
+   - column family - Column families physically colocate a set of columns and their values, often for performance reasons. Each column family has a set of storage properties, such as whether its values should be cached in memory, how its data is compressed or its row keys are encoded, and others. Each row in a table has the same column families, though a given row might not store anything in a given column family.
+   - column qualifier - A column qualifier is added to a column family to provide the index for a given piece of data. Given a column family content, a column qualifier might be content:html, and another might be content:pdf. Though column families are fixed at table creation, column qualifiers are mutable and may differ greatly between rows.
+   - Cell - A cell is a combination of row, column family, and column qualifier, and contains a value and a timestamp, which represents the value's version.
+   - Timestamp - Values within a cell are versioned Versions are identified by their version number, which by default is the timestamp of when the cell was written If a timestamp is not specified during a write, the current timestamp is used If the timestamp is not specified for a read, the latest one is returned The number of cell value versions retained by HBase is configured for each column family The default number of cell versions is three.
+   - To make data easier to manage, HBase splits its tables into regions. Each region is a subset of the data, and the data within each region is determined by the row key range. When a region gets too large, it is automatically split into smaller regions to maintain performance and scalability. Each Region Server stores data for its regions in HDFS data files.
+   - storage format (Hfile) - File format for hbase in hdfs. A file of sorted key/value pairs. Both keys and values are byte arrays.
+- Physical View - Although at a conceptual level tables may be viewed as a sparse set of rows, they are physically stored by column family. A new column qualifier (column_family:column_qualifier) can be added to an existing column family at any time. The empty cells shown in the conceptual view are not stored at all. However, if no timestamp is supplied, the most recent value for a particular column would be returned.
+- How do these elements differ from a traditional relational database - 
+- Why is schema design driven by access patterns?
+
+2. **Components & Storage Flow:**
+- HMaster - The HMaster is a central component in an HBase cluster and is responsible for managing metadata and coordinating cluster operations. It keeps track of regions, assigns regions to Region Servers, and handles region splits and merges.\ 
+The Hmaster exposed methods on Tables, ColumnFamily, Regions.\
+- RegionServers - Region Servers are responsible for serving data in HBase. They do the real work. They host a set of regions. Each Region Server can serve multiple regions and is responsible for reading, writing, and managing data within those regions. In a distributed cluster, a RegionServer runs on a DataNode.
+- Store - One column familiy inside one region.
+- MemStore - in-memory storage. A fast, in-memory storage for writes. It temporarily holds the latest data until it is written to disk. After the data is written to the Write-Ahead Log, it is placed into the MemStore.
+- HFiles - Once the MemStore becomes full (after many writes), the data is flushed to disk as HFiles in HDFS. An HFile is the file format that HBase uses to store data in HDFS. It contains a multi-layered index which allows HBase to seek the data without having to read the whole file. The size of those indexes is a factor of the block size (64KB by default), the size of your keys and the amount of data you are storing.
+- block cache - is the read cache. It stores frequently read data in  memory. Least Recently Used data is evicted when full.
+- Write-Ahead Log (WAL) - The basic idea behind WAL is to record changes in a log before they are applied to the actual storage. contains a sequential record of all changes made to the database. Transactions are not considered complete until the corresponding changes are safely recorded in the write-ahead log.
+- How does data flow from a client write to durable storage - 
+   1. WAL - The data is first written to the Write-Ahead Log (WAL) to ensure durability and recovery in case of failure.
+   2. MemStore - The data is placed into the MemStore (in-memory storage) of the region servers..
+   3. Disk - Once the MemStore becomes full (after many writes), the data is flushed to disk (in the region server) as HFiles in HDFS.
+- how are reads served from memory and disk structures?
+   1. MemStore - HBase first checks MemStore to get the freshest data.
+   2. BlockCache - If not found, it will check the BlockCache (a fast cache of recently read data).
+   3. Disk - If still not found, HBase will retrieve the data from HFiles on disk.
+
+3. **Performance & Maintenance:**\
+How do they affect read/write latency, storage efficiency, and amplification?
+- Minor and major compactions -\
+   - Minor Compaction - Minor compactions usually select a small number of small, adjacent StoreFiles and rewrite them as a single StoreFile. Minor compactions do not drop (filter out) deletes or expired versions, because of potential side effects. The end result of a minor compaction is fewer, larger StoreFiles for a given Store.
+   - Major Compaction - is a single StoreFile per Store. Major compactions also process delete markers and max versions. During a major compaction, the data is actually deleted, and the tombstone marker is removed from the StoreFile. Instead, the expired data is filtered out and is not written back to the compacted StoreFile. When you create a Column Family, you can specify the maximum number of versions to keep. The default value is 1. If more versions than the specified maximum exist, the excess versions are filtered out and not written back to the compacted StoreFile. Reduces amplification.
+- MOB storage - The MOB feature reduces the overall IO load for configured column families by storing values that are larger than the configured threshold outside of the normal regions to avoid splits, merges, and most importantly normal compactions. The default is 100 Kb.
+- Bloom filters - Just like the HFile indexes, those data structures (when enabled) are stored in the LRU. Bloom filters are stored at the HFile level and evaluated before scanning the disk.
+- Caching - improve read performance. Block cache is configurable at table’s column family level. Different column families can have different cache priorities or even disable the block cache. When performing a scan, if block cache is enabled and there is room remaining, data blocks read from StoreFiles on HDFS are cached in region server’s Java heap space, so that next time, accessing data in the same block can be served by the cached block. Block cache helps in reducing disk I/O for retrieving data.
+- Importance of row-key design - improve performance. Records in Hbase are stored as a sorted list of row keys according to the lexicographic order and allow fast access to an individual record by its key or fast fetching of a range of data between a given start and end row keys.
+- Hotspot avoidance - If a Region reaches that maximal size, it is split into two smaller regions, becoming a hotspot victim because one of these new Regions takes all new records (Limits the write throughput to the capacity of a single server instead of making use of multiple/all nodes in the HBase cluster). There are several solutions: Add salt to the Row Key, use of Hashed Row Key, reverse the row key.
+
+4. **Fault Tolerance & Coordination:**
+- How does HBase use those features via ZooKeeper to handle failures and maintain availability:
+   - WAL replay - In case of a failure or server crash, when HBase restarts, it replays the WAL entries that were not yet persisted to the HFiles. This replay mechanism ensures that all the writes that were acknowledged but not yet written to the HFiles are restored, maintaining consistency.
+   - region reassignment - 
+   - coordination - 
+- What happens when a RegionServer crashes?
+
+5. **Scalability & Operations:**
+- how HBase scales horizontally through region splitting and balancing?
+- how it relies on HDFS for durability?
+- what administrative actions (snapshots, backups, schema changes, recovery) operators perform in production environments?
+
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Hbase and an industry alternative.
 - Deliverable: A written summary (minimum 1 or 2 sentences).
