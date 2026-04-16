@@ -145,6 +145,29 @@ How do they affect read/write latency, storage efficiency, and amplification?
 - how it relies on HDFS for durability?
 - what administrative actions (snapshots, backups, schema changes, recovery) operators perform in production environments?
 
+### Q&A - Answers
+1. Big table and Hbase invention: Big table was invented for managing structured data at Google. Bigtable has achieved scalabilty, high performance, and high availability, it designed to reliably scale out to petabytes. Bigtable was used by a lot of google products. The first Hbase was created as a Hadoop contribution. It carries all the features of the original Google Big table paper like the Bloom filters, in-memory operations and compression. Apache HBase became its open-source implementation.
+2. HBase used for massive amount of data which needs to scale horizontally with fast performance for accessing data. Usecases examples:
+   - Application logs for diagnostic and analysis.
+   - Genome sequences and the disease history of people in a particular demographic.
+   - Head-to-head competition histories in sports for better analytics and outcome predictions
+3. Joins in HBase: There are no joins in hbase. You have to do it on your own by either denormalizing the data before writing to HBase, or doing the join between tables in the application or MapReduce case.
+4. Quering operations in HBase:
+   - Get - returns attributes of a specified row.
+   - Scan - iteration over multipule rows for specified attributes.
+
+Instead of retireving all the data and filter it in the client side, HBase allow filters which applied logic on the server-side. Filtering reducing overhead. Most efficient features:
+   - SingleColumnValueFilter - like where clause. Filtering by value in a specific column.
+   - PrefixFilter - Filter rows based on rew key prefix.
+   - ColumnPrefixFilter - Filtering columns with specific prefix.
+5. The .META. is stored in a regionServer like any other table (it ever can be split into muiltiple regions). the META table structure is -\
+Key: region start key, region id. Value: region server.\
+It can be replicated by maintains read-only copies of the META table by configuring a set of properties in cloudera manager.
+6. Hbase doesnt have to run over hdfs, it can also run over s3 or it can run in a standalone mode.
+7. connction register ----
+8. What is thrift? When and why to use the thrift method?
+2. LSM trees - 
+
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Hbase and an industry alternative.
 - Deliverable: A written summary (minimum 1 or 2 sentences).
