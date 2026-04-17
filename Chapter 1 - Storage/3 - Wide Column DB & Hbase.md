@@ -103,8 +103,8 @@ Answer these five questions to cover HBase’s major areas:
 - Physical View - Although at a conceptual level tables may be viewed as a sparse set of rows, they are physically stored by column family. A new column qualifier (column_family:column_qualifier) can be added to an existing column family at any time. The empty cells shown in the conceptual view are not stored at all. However, if no timestamp is supplied, the most recent value for a particular column would be returned.
 
 2. **Components & Storage Flow:**
-- HMaster - The HMaster is a central component in an HBase cluster and is responsible for managing metadata and coordinating cluster operations. It keeps track of regions, assigns regions to Region Servers, and handles region splits and merges.\ 
-The Hmaster exposed methods on Tables, ColumnFamily, Regions.\
+- HMaster - The HMaster is a central component in an HBase cluster and is responsible for managing metadata and coordinating cluster operations. It keeps track of regions, assigns regions to Region Servers, and handles region splits and merges. 
+The Hmaster exposed methods on Tables, ColumnFamily, Regions.
 - RegionServers - Region Servers are responsible for serving data in HBase. They do the real work. They host a set of regions. Each Region Server can serve multiple regions and is responsible for reading, writing, and managing data within those regions. In a distributed cluster, a RegionServer runs on a DataNode.
 - Store - One column familiy inside one region.
 - MemStore - in-memory storage. A fast, in-memory storage for writes. It temporarily holds the latest data until it is written to disk. After the data is written to the Write-Ahead Log, it is placed into the MemStore.
@@ -122,7 +122,7 @@ The Hmaster exposed methods on Tables, ColumnFamily, Regions.\
 
 3. **Performance & Maintenance:**\
 How do they affect read/write latency, storage efficiency, and amplification?
-- Minor and major compactions -\
+- Minor and major compactions -
    - Minor Compaction - Minor compactions usually select a small number of small, adjacent StoreFiles and rewrite them as a single StoreFile. Minor compactions do not drop (filter out) deletes or expired versions, because of potential side effects. The end result of a minor compaction is fewer, larger StoreFiles for a given Store.
    - Major Compaction - is a single StoreFile per Store. Major compactions also process delete markers and max versions. During a major compaction, the data is actually deleted, and the tombstone marker is removed from the StoreFile. Instead, the expired data is filtered out and is not written back to the compacted StoreFile. When you create a Column Family, you can specify the maximum number of versions to keep. The default value is 1. If more versions than the specified maximum exist, the excess versions are filtered out and not written back to the compacted StoreFile. Reduces amplification.
 - MOB storage - The MOB feature reduces the overall IO load for configured column families by storing values that are larger than the configured threshold outside of the normal regions to avoid splits, merges, and most importantly normal compactions. The default is 100 Kb.
@@ -169,7 +169,7 @@ There are three types of connection registry -
    - MasterRegistry - deprecated.
    - RpcConnectionRegistry - hbase+rpc.
    - ZKConnectionRegistry - hbase+zk.
-8. What is thrift? When and why to use the thrift method? Apache Thrift is an open-source RPC framework. It has several benefits -\
+8. What is thrift? When and why to use the thrift method? Apache Thrift is an open-source RPC framework. It has several benefits -
    - Thrift Filter Launguage - performs server-side filtering when accessing Hbase over Thrift.
    - Thrift IDL - the interface definition launuage defines both the data structure and the interfaces for the services that communicate across different systems.
    - Performance - Thrift provides compact and efficient binary serialization incontrast to rest which is more human readable making it more cpu intensive.
