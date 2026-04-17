@@ -170,7 +170,7 @@ Great Article, writing it for me: https://www.cloudera.com/blog/technical/small-
 - fsimage - periodically.
 13. Checkpoints -  Checkpointing is a process that takes an fsimage and edit log and compacts them into a new fsimage. This way, instead of replaying a potentially unbounded edit log, the NameNode can load the final in-memory state directly from the fsimage. This is a far more efficient operation and reduces NameNode startup time. Checkpointing allows the NameNode to merge the edit log with the file system, which reduces the size of the log and improves the performance of the NameNode.
 14. How HDFS reads in a pararallize way?
-It reads from multipule blocks from different nodes in the same time.
+It reads from multipule blocks from different nodes in the same time. The FSDataInputStream from the client framework level is resposible of it. The data is spread in different blocks so it can be read with multipule threads (for example using Spark for processing). 
 15. Fencing mechanism in journal nodes - The journal nodes works in a way that only on node can write edit log in specific time.
 16. What additional information is sent in the heartbeat? The heartbeat also carries information lke total storage capacity, the usage of storage, and the number of data transfers currently in progres.
 17. Which component is doing the checkpoints? and when? the checkpoint is performed by standby nameNode or SeconderyNameNode (legacy). It happends by triggers. fs.checkpoint.period controls how often this reconciliation will be triggered. fs.checkpoint.size is a size threshold, which, if reached by edits, will trigger an immediate checkpoint regardless of time elapsed since the last checkpoint. 
