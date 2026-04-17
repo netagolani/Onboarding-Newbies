@@ -101,8 +101,6 @@ Answer these five questions to cover HBase’s major areas:
    - To make data easier to manage, HBase splits its tables into regions. Each region is a subset of the data, and the data within each region is determined by the row key range. When a region gets too large, it is automatically split into smaller regions to maintain performance and scalability. Each Region Server stores data for its regions in HDFS data files.
    - storage format (Hfile) - File format for hbase in hdfs. A file of sorted key/value pairs. Both keys and values are byte arrays.
 - Physical View - Although at a conceptual level tables may be viewed as a sparse set of rows, they are physically stored by column family. A new column qualifier (column_family:column_qualifier) can be added to an existing column family at any time. The empty cells shown in the conceptual view are not stored at all. However, if no timestamp is supplied, the most recent value for a particular column would be returned.
-- How do these elements differ from a traditional relational database - 
-- Why is schema design driven by access patterns?
 
 2. **Components & Storage Flow:**
 - HMaster - The HMaster is a central component in an HBase cluster and is responsible for managing metadata and coordinating cluster operations. It keeps track of regions, assigns regions to Region Servers, and handles region splits and merges.\ 
@@ -135,15 +133,17 @@ How do they affect read/write latency, storage efficiency, and amplification?
 
 4. **Fault Tolerance & Coordination:**
 - How does HBase use those features via ZooKeeper to handle failures and maintain availability:
-   - WAL replay - In case of a failure or server crash, when HBase restarts, it replays the WAL entries that were not yet persisted to the HFiles. This replay mechanism ensures that all the writes that were acknowledged but not yet written to the HFiles are restored, maintaining consistency.
-   - region reassignment - 
-   - coordination - 
-- What happens when a RegionServer crashes?
+When a failure of a region server happens, other region servers race to create a znode called lock inside the dead region server's znode that contains its queues. The region server that creates it successfully then transfers all the queues to its own znode, one at a time since ZooKeeper does not support renaming queues. After queues are all transferred, they are deleted from the old location. The znodes that were recovered are renamed with the ID of the slave cluster appended with the name of the dead server.
 
 5. **Scalability & Operations:**
 - how HBase scales horizontally through region splitting and balancing?
-- how it relies on HDFS for durability?
+- how it relies on HDFS for durability? The WAL and the HFiles are wrriten in HDFS, so when there is a failover the durability of keeping the hsbase managing files in hdfs helps the recovery mechanism.
 - what administrative actions (snapshots, backups, schema changes, recovery) operators perform in production environments?
+- Backups
+   - Full shutdown backup - the cluster is down but the backup is fully covered because there are no changes during the backup.
+   - Live cluster backup - the copytable used for copying data from one table to another on the same cluster or to another cluster.
+- Snapshots - HBase snapshots allow you to clone a table without making data copies. Without using snapshots, the only way to backup or clone a table was to use the provided CopyTable or ExportTable tools (it means no read or writes and degrade performance). Used for data migration and recovery from data corrupted. From a snapshot you can create new tabe `clone_snapshot`, or restore the original table `restore_snapshot`. To clone a table to another cluster, you export the snapshot to the other cluster and then run the clone operation.
+- Schema changes - When changes are made to either Tables or ColumnFamilies, these changes take effect the next time there is a major compaction and the StoreFiles get re-written. Update are made with `put` command.
 
 ### Q&A - Answers
 1. Big table and Hbase invention: Big table was invented for managing structured data at Google. Bigtable has achieved scalabilty, high performance, and high availability, it designed to reliably scale out to petabytes. Bigtable was used by a lot of google products. The first Hbase was created as a Hadoop contribution. It carries all the features of the original Google Big table paper like the Bloom filters, in-memory operations and compression. Apache HBase became its open-source implementation.
@@ -164,9 +164,37 @@ Instead of retireving all the data and filter it in the client side, HBase allow
 Key: region start key, region id. Value: region server.\
 It can be replicated by maintains read-only copies of the META table by configuring a set of properties in cloudera manager.
 6. Hbase doesnt have to run over hdfs, it can also run over s3 or it can run in a standalone mode.
-7. connction register ----
-8. What is thrift? When and why to use the thrift method?
-2. LSM trees - 
+7. connction registery - Client internally works with a connection registry to fetch the metadata needed by connections. This connection registry implementation is responsible for fetching the following metadata: Active master address, Current meta regions locations, Cluster ID.\
+There are three types of connection registry - 
+   - MasterRegistry - deprecated.
+   - RpcConnectionRegistry - hbase+rpc.
+   - ZKConnectionRegistry - hbase+zk.
+8. What is thrift? When and why to use the thrift method? Apache Thrift is an open-source RPC framework. It has several benefits -\
+   - Thrift Filter Launguage - performs server-side filtering when accessing Hbase over Thrift.
+   - Thrift IDL - the interface definition launuage defines both the data structure and the interfaces for the services that communicate across different systems.
+   - Performance - Thrift provides compact and efficient binary serialization incontrast to rest which is more human readable making it more cpu intensive.
+   - Versioning - Thrift has mechanism  for versioning data which is very helpful in distributed environment where your service interfaces may change, but you cannot atomically update all your client and server code.
+
+In conclusion, you may use Thrift over Rest in disributed systems which transfers big amounts of data with more efficient mechanisms and interface level for multipule different services.
+9. Hbase native API - to use hbase CLI we nned to SSH into an HBase node and use the HBase shell. Example of get help on a specific command: `hbase> help "create"`. More commands can be: `hbase hfile` to diagnose information about specific hfile, `scan <table_name>`, `get <table_name>, <row>`, `<drop <table_name>`, `<disable <table_name>` (for change settings and then enable).   
+10. Where tha Write-ahead log file? It exists in a regionServer in the /hbase/WALs/ directory wrriten to HDFS which means its replicated (important for failovers), with subdirectories per RegionServer.
+11. What triggers a flush from memStore to disk?
+   - Reaching memStore size - hbase.hregion.memstore.flush.size
+   - Reaching memStore usage limit - hbase.regionserver.global.memstore.upperLimit The flush order of region's memStore will be in descending order until it gets slightly below hbase.regionserver.global.memstore.lowerLimit.
+   - Reaching the number of WAL log entries with the value hbase.regionserver.max.logs, MemStores from various regions will be flushed out to disk based on time (the oldest memStore) to reduce the number of logs in the WAL.
+12. What is the components which groups tables? A namespace.
+13. What are the data types which can be stored in Hbase? Everything in HBase tables is stored as a byte[ ] There are no types. 
+14. Failover of region server - 
+   - zookeeper noticed there are no heartbeats.
+   -  The Hmaster splits the WAL into separate files and stores them in available region servers. 
+   - Each region server replays the WAL, to rebuild the memstore for that region.
+15. Tombstone Marker - Hbase files are immutable so it can't be modified the Hfile as deleted. Instead it adds another record of deleted keys - tombstone markers which marks it as dead. I imagine it as a new version which tells that the cell/column/etc is dead. When there is a Scan or Get method it knows to skip the deleted cells. The tombstone markers and the values themselves are deleted in major compaction.
+16. Does in every major compaction the tombstone will be deleted? Yes and also the actual data itself, unless there is a major compaction on other HFiles because of the compaction policy.
+17. triggers of compactions - can be automatically by number of HFiles, time and data size. It is set in the compaction policies. It can also be triggered manually for specific needs.
+18. According to which logic object compactions are made? Regions.
+19. Which Hfiles are stored together? Hfiles which belongs to the same Region.
+20. Major compaction resposibilies - Merge all the HFiles of a region to on single Hfile, reduce seeks to disk, delete expired and deleted cells (according the tombstone markers).
+21. When does bloom filter applied and where it stores? Bloom filters provided in get operations to reduce the number of disk reads (do not work with scans). The Bloom filters are stored in the metadata of each HFile and never need to be updated. When an HFile is opened because a region is deployed to a RegionServer, the Bloom filter is loaded into memory.
 
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Hbase and an industry alternative.
