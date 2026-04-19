@@ -161,7 +161,7 @@ Instead of retireving all the data and filter it in the client side, HBase allow
    - PrefixFilter - Filter rows based on rew key prefix.
    - ColumnPrefixFilter - Filtering columns with specific prefix.
 5. The .META. is stored in a regionServer like any other table (it ever can be split into muiltiple regions). the META table structure is -\
-Key: region start key, region id. Value: region server.\
+Key: region key format as ([table], [region start key], [region id]). Value: [info:regioninfo], [info:server], [info:serverstartcode].\
 It can be replicated by maintains read-only copies of the META table by configuring a set of properties in cloudera manager.
 6. Hbase doesnt have to run over hdfs, it can also run over s3 or it can run in a standalone mode.
 7. connction registery - Client internally works with a connection registry to fetch the metadata needed by connections. This connection registry implementation is responsible for fetching the following metadata: Active master address, Current meta regions locations, Cluster ID.\
@@ -193,8 +193,24 @@ In conclusion, you may use Thrift over Rest in disributed systems which transfer
 17. triggers of compactions - can be automatically by number of HFiles, time and data size. It is set in the compaction policies. It can also be triggered manually for specific needs.
 18. According to which logic object compactions are made? Regions.
 19. Which Hfiles are stored together? Hfiles which belongs to the same Region.
-20. Major compaction resposibilies - Merge all the HFiles of a region to on single Hfile, reduce seeks to disk, delete expired and deleted cells (according the tombstone markers).
-21. When does bloom filter applied and where it stores? Bloom filters provided in get operations to reduce the number of disk reads (do not work with scans). The Bloom filters are stored in the metadata of each HFile and never need to be updated. When an HFile is opened because a region is deployed to a RegionServer, the Bloom filter is loaded into memory.
+20. Major compaction resposibilies - Merge all the HFiles of a region to on single Hfile, delete reference files and data in splits, delete expired and deleted cells (according the tombstone markers).
+21. When does bloom filter applied and where it stores? Bloom filters provided in get operations to reduce the number of disk reads (do not work with scans). The Bloom filters are stored in the metadata of each HFile and never need to be updated. When a HFile is opened because a region is deployed to a RegionServer, the Bloom filter is loaded into memory.
+
+### Q&A - Answers
+
+1. HDFS block vs HBase block -\
+   - HBase block - Single unit of I/O, the smallest amount of data HBase can read or write in HBase the default is 64kb. HBase blocks has 4 types: DATA (store user data), META (metadata of the Hfile itself), INDEX (provide index over the cells contained in the DATA blocks) and BLOOM (contain a bloom filter over the same data blocks).
+   - HDFS blocks - block is a file. In HDFS the files are wrriten to blocks which are write once read many in size of 128MB to improve performance.
+2. MetaCache - rotem needs to send me the ticket number to read it
+----------------
+3. Hbase regions limit - 1000 per regionServer.
+4. Thrift vs Native API (protocal wize)
+Native API - java client API.
+5. What is the namespace of the meta table - hbase.
+6. How to connect to Hbase and to HDFS?
+----------------
+7. Which compaction rewrite and delete the data to another region? major compaction.
+
 
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Hbase and an industry alternative.
