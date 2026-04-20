@@ -59,7 +59,7 @@ In the remote meta store mode we have three separated components:
     - Hive Service JVM - java virtual machine of the drive, the component which accepts queries (JDBC/ODBC)
     - Metastore Server JVM - Its an individual JVM which not in the Hive service which can scale up (provides availability) and handle concurrent clients of other processes using Thrify Network API.
     - remote database
-- What are common backend databases? Derby (embedded metastore), MySQL, Oracle, Postgres.
+- What are common backend databases? Derby (embedded metastore), MySQL, Oracle, Postgres, Databricks.
 
 3. **Schema & Tables:**\
 What are the key tables in the metastore schema?
@@ -72,7 +72,26 @@ DB_ID , DESC , DB_LOCATION_URI , NAME , OWNER_NAME , OWNER_TYPE.
 - PARTITIONS - partitions. Join with DBS and TBLS tables.\
 PART_ID , CREATE_TIME , LAST_ACCESS_TIME , PART_NAME , SD_ID , TBL_ID , LINK_TARGET_ID.
 
-4. **Extensibility & Clients:**
+4. **Extensibility & Clients:**\
+How do external engines such as Apache Spark, Trino, and other tools interact with the metastore? Metastore server and client communicate using Thrift Protocol. The client configurations parameters are: hive.metastore.uris=<thrift://<host_name>:<port>>, user, authentication type (kerberos), hive.metastore.warehouse.dir=<base hdfs path>
+What APIs and protocols are used?
+Thrift API (RPC), JDBC ,Rest API, Java client API.
+
+5. **Administration:**\
+- What are common administrative tasks (backup, schema upgrades, migration, repair)?
+    - backup - backup periodiclly the metastore database.
+    - schema upgrades- The metastore schema version needs to be compatible with hive binaries (hive cli, api) that are going to access the metastore. Upgrade schema is done by Hive schema tool to much hive version schema to the metastore schema.
+    - migrations - move customers from hive services to trino.
+    - repair - REPIAR TABLE is used to update the metadata in the Hive metastore to reflect the current state of the partitions in the file system. This is particularly necessary for external tables where partitions might be added directly to the file system (such as HDFS or Amazon S3) without using Hive commands.
+- What happens if the metastore becomes unavailable, and why is it considered a critical dependency in data platforms?
+If hive metastore is unavailable:
+    - queries that need metadata wil fail.
+    - New sessions that require table schemas cannot start properly.
+    - Spark, trino and impala wont be able to read schema/catalog information, again quries will fail.
+    - operations that consult the metastore will fail.
+    - Jobs that already have fully-resolved plans: running MapReduce/Spark tasks that were compiled before the outage and do not need metadata at execution time may continue to run to completion.
+    - Table creation, alteration, drop, partition operations: blocked — cannot persist or retrieve metadata.
+    - ACID operation will fail - require metastore for transactional state.
 
 ## Hive Table Formats
 
