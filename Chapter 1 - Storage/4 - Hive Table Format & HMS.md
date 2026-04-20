@@ -35,6 +35,45 @@ Answer the following questions to explore the metastore:
 
 5. **Administration:**  What are common administrative tasks (backup, schema upgrades, migration, repair)? What happens if the metastore becomes unavailable, and why is it considered a critical dependency in data platforms?
 
+## Hive Metastore
+
+1. **Purpose & Function:**
+- What is Hive? A framework for data warehouse system that enables analytics at massive scale and factilitates reading, writing in distributed storage using SQL. Hive was created to make it possible for analysts with SQL skills.
+- What is Hive Metastore? HMS is database where metadata is stored. Metadata repository. Responsible for the virtualization of data collections in HDFS as tables.
+- What types of metadata does it store?
+    - databases
+    - Table's metadata - list of columns, owner, storage (location). SerDe metadata (implementation calass of serializer and deserializer).
+    - Partition - Each partition can have its own columns and SerDe and storage information. This facilitates schema changes without affecting older partitions.
+- Why is a centralized metadata service necessary in a distributed data platform?
+    - common data access pattern - HMS is the bridge between the storage layer and the compute layer.
+    - Single Source of Truth - of the metadta
+    - Decoupling -  enables the whole system to scale independently by decoupling  the metadta, computing and storage which are decouple to one technology or platform.
+
+2. **Architecture & Backend:**
+- Describe how the metastore is implemented as a standalone service backed by a relational database? By default, the metastore is run in the same process as the Hive service. It can run in a standalone (remote) process.\
+Hive metastore consists of two units:
+    - service - metastore access to other Hive services.
+    - Disk storage - Hive metadata storage
+
+In the remote meta store mode we have three separated components:
+    - Hive Service JVM - java virtual machine of the drive, the component which accepts queries (JDBC/ODBC)
+    - Metastore Server JVM - Its an individual JVM which not in the Hive service which can scale up (provides availability) and handle concurrent clients of other processes using Thrify Network API.
+    - remote database
+- What are common backend databases? Derby (embedded metastore), MySQL, Oracle, Postgres.
+
+3. **Schema & Tables:**\
+What are the key tables in the metastore schema?
+- SDS - Storage Descriptor. Join with DBS and TBLS Tables.\
+SD_ID , CD_ID , INPUT_FORMAT  , IS_COMPRESSED , IS_STOREDASSUBDIRECTORIES , LOCATION , NUM_BUCKETS , OUTPUT_FORMAT , SERDE_ID.
+- TBLS - Tables. Join with DBMS, SDS, and Partitions table.\
+TBL_ID , CREATE_TIME , DB_ID  , LAST_ACCESS_TIME , OWNER , RETENTION  , SD_ID , TBL_NAME  , TBL_TYPE ,VIEW_EXPANDED_TEXT , VIEW_ORIGINAL_TEXT , LINK_TARGET_ID.
+- DBS - Databases. Join with SDS and TBLS tables.\
+DB_ID , DESC , DB_LOCATION_URI , NAME , OWNER_NAME , OWNER_TYPE.
+- PARTITIONS - partitions. Join with DBS and TBLS tables.\
+PART_ID , CREATE_TIME , LAST_ACCESS_TIME , PART_NAME , SD_ID , TBL_ID , LINK_TARGET_ID.
+
+4. **Extensibility & Clients:**
+
 ## Hive Table Formats
 
 Answer the following questions to understand table formats:
