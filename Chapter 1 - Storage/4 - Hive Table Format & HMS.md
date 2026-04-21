@@ -105,6 +105,62 @@ Answer the following questions to understand table formats:
 
 4. **Integration with Storage:**  How do table formats map to physical storage (directories, files)? What conventions does Hive use for partitions, buckets, and file naming?
 
+## Hive Table Formats - Answers
+
+1. **Definition & Role:**\
+- What does a “table format” mean in Hive?\
+Table format allows querying tables in a specific format (a path format for example). 
+- How does it differ from table metadata stored in the metastore? The table metadata stored metadata in a table, their are databases, tables rows and columns. While in table format their  is a path which lead to several files which described together a table.
+- Explain the relationship between logical schema and physical file layout.\
+The logical schema needs to be with the same order columns of the file layout. If not, when you query the table it won't succeed to present the misordered columns.
+
+2. **Common Formats:**  Describe popular formats such as Text/CSV, Parquet, ORC, Avro. How do they differ in encoding, compression, columnar storage, and query performance?
+- Text/CSV - the default file format. ESCAPED BY `<delimiter>`, Has a custom NULL format (default is '\N'). All binary columns assumed to be base64 encoded.
+- Parquet - wide columnar format of flatted nested data structures. Supports compression and encoding schemes specified per column level.
+- ORC - supports ACID transaction
+- Avro - apache avro
+
+3. **Schema & Tables:**\
+- Explain the difference between managed and external tables, including ownership, lifecycle, and storage location semantics?\
+Managed tables hive owns the data. The data, properties and layout can only be changes via hive. When youre drop a table it deletes also it's files. Stores under the path /user/hive/warehouse/databse/tablename. In contrast to external table which can managed by processes outside of Hive. Fille would remain even if the table is dropped.
+
+4. **Integration with Storage:**\
+- How do table formats map to physical storage (directories, files)? With SerDe which defins in the metastore for each table. For example, for a table of parquets will be in the metastore a SerDe of parquet which defines the OutputFormat that needs to be wrriten as parquet files in directories from java objects. By doing a serilize method.
+- What conventions does Hive use for partitions, buckets, and file naming?
+partitions needs to be by a partition key - a column in the table. If it is partitioned by multipule columns it will defined as subdirectories. For example, table/year/month/day.
+
+## Hive Table Formats - Q&A Answers
+1. What is partitions? How hive supports it?
+Partitioning is a design technique of dividing a table into smaller and managable pieces called partitions. partition key is the determinator of how the data will distributed.
+2. bucketing in hive vs partitions:\
+Paritions in hive - 
+    - stores each partition in a seperate directory in HDFS. 
+    - A partition is typically based on the value of a column.
+    - reduce the amount of data which needs to be scanned that filter on the partition column.
+
+Bucketing in hive - 
+    - divides data into a fixed number of equal-sized files which called "buckets".
+    - The buckets are based on the hash value of a specific column.
+    - Used for distribute data evenly across a set number of files for better query performance (for example, when joining large datasets).
+    - Defined by the `CLUSTERED BY (column_name) INTO XX BUCKETS`.
+    - The result of  a hash function to the bucketed column determines which bucket a record will go into.
+
+In conclution, in bucketing the number of buckets is fixed so its not effected by the data. In contrast to partition which determines in which bucket to put the data.
+3. what happened when the metastore data base is down and the service is be accessed only up? Can we still connect to the data?\
+The service has a cache store so the metastore's data will be available only if the data exists in the cache.
+The size of the metastore cache can be restricted by a combination of cache white list and black list patterns. So only if the table considered as a white list it will be available.
+4. In case the scheme is invalid? What will be the query output in parquet, csv, text.
+Each file format acts different:
+    - parquet - Saves its own schema in the file. column mistmatch: rename a column in hive but not in the parquet file returns NULL. Type mistmatc - the query will fail. Extra columns - ignored.
+    - Text/CSV - text based formats. do not save column names or datatypes. column mistmatch - return NULL for the column. type mistmatch - return NULL. Extra columns - also NULL. 
+5. What is SerDe?
+- SerDe is short for Serializer/Deserializer.
+- A SerDe allows Hive to read in data from a table, and write it back out to HDFS in any custom format.
+- Anyone can write their own SerDe for their own data formats.
+- Builtin SerDes can be Avro, ORC, Parquet, CSV, etc.
+- Serde.deserialize() perform deserialization according the InputFormat to read. By the Inputformat it knows how to show files as tables (java objects which combined to rows)
+- Serde.serialize() perform on the deserialized object according the OutputFormat to write. Knows how from java objects to write it as files in hdfs under paths.
+
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Hive table format and HMS and an industry alternative.
 - Deliverable: A written summary (minimum 1 or 2 sentences).
