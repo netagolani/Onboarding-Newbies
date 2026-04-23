@@ -117,8 +117,8 @@ The logical schema needs to be with the same order columns of the file layout. I
 2. **Common Formats:**  Describe popular formats such as Text/CSV, Parquet, ORC, Avro. How do they differ in encoding, compression, columnar storage, and query performance?
 - Text/CSV - the default file format. ESCAPED BY `<delimiter>`, Has a custom NULL format (default is '\N'). All binary columns assumed to be base64 encoded.
 - Parquet - wide columnar format of flatted nested data structures. Supports compression and encoding schemes specified per column level.
-- ORC - supports ACID transaction
-- Avro - apache avro
+- ORC - supports ACID transaction. Columnar format arranges columns adjacent within the file for compression. It was designed to overcome limitations of the other Hive file formats. An ORC file contains group of row data called stripes. Eacg stripe holds index data, row data and stripe footer which contains a directory of stream locations.
+- Avro - apache avro is a row based storage format. Has a metadata header with json scheme, compression codec and sync maker which tells how to split the data.
 
 3. **Schema & Tables:**\
 - Explain the difference between managed and external tables, including ownership, lifecycle, and storage location semantics?\
@@ -127,7 +127,7 @@ Managed tables hive owns the data. The data, properties and layout can only be c
 4. **Integration with Storage:**\
 - How do table formats map to physical storage (directories, files)? With SerDe which defins in the metastore for each table. For example, for a table of parquets will be in the metastore a SerDe of parquet which defines the OutputFormat that needs to be wrriten as parquet files in directories from java objects. By doing a serilize method.
 - What conventions does Hive use for partitions, buckets, and file naming?
-partitions needs to be by a partition key - a column in the table. If it is partitioned by multipule columns it will defined as subdirectories. For example, table/year/month/day.
+partitions needs to be by a partition key - a column in the table. If it is partitioned by multipule columns it will defined as subdirectories. Buckets are presented as numeric files - 0000001_0, 0000002_0.
 
 ## Hive Table Formats - Q&A Answers
 1. What is partitions? How hive supports it?
