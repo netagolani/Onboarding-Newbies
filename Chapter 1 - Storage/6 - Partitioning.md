@@ -27,6 +27,8 @@ Estimated Duration: 0.5 Days
 4. **Maintenance & Evolution:** What challenges arise when partitions grow or have inconsistent metadata? Discuss operations like adding, dropping, or merging partitions.
 5. **Bucketing & Data Layout:** What is bucketing, and how does it differ from partitioning? When is bucketing useful (e.g., joins, load balancing, reducing shuffle)? How can bucketing complement partitioning in large datasets?
 
+## Core Questions
+
 ## Wrapping Up :trophy:
 Review your answers with your mentor and identify scenarios where partitioning could dramatically improve or hurt a workload.
 
