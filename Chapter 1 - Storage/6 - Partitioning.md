@@ -31,7 +31,7 @@ Estimated Duration: 0.5 Days
 
 1. **Motivation & Definitions:** What problems does partitioning solve?\
 Performance, scalability, resource utilization.
-Distinguish between horizontal and vertical partitioning, and between logical and physical partitions.\
+Distinguish between horizontal and vertical partitioning, and between logical and physical partitions.
 - vertical partitioning - seperated data based on columns. Each partition contains a subset pf columns for all rows.
 - horizontal partitioning - divides data by rows. When the horizontal partitions are scale out it called sharding.
 - Logical partition - organizing data by design. Based on partition key.
