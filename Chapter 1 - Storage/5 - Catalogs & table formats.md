@@ -73,7 +73,8 @@ Estimated Duration: 1 Day
 
 ## Core Concepts - Answers
 
-1. **Data warehouse / lake / lakehouse:**  What are the defining characteristics of each?\
+1. **Data warehouse / lake / lakehouse:**  
+- What are the defining characteristics of each?\
 Data Warehouse:
    - Considered of being OLAP database.
    - Mainly stores structured data, schema on write.
@@ -85,19 +86,22 @@ Data Lake:
    - Handle unstructured data
    - Decoupled to compute engine
    - lack of performance and ACID guarantees
+
 Data Lakehouse:
    - Stores data as data lake
-   - Query engines as data lake
+   - compute engines as data lake
    - But has a table format
-Why do architects care about a separate metadata layer in a lakehouse versus a traditional warehouse?\ 
+   
+- Why do architects care about a separate metadata layer in a lakehouse versus a traditional warehouse?\ 
 So it won't be coupled to the compution engine as traditional warehouse.
 
-2. **The Concept Of Catalog**  Describe the purpose of a metadata catalog.  How
-does it compare to Hive Metastore? (hint: the metastore *is* a catalog)\
+2. **The Concept Of Catalog**  
+- Describe the purpose of a metadata catalog.  How does it compare to Hive Metastore? (hint: the metastore *is* a catalog)\
 Metadata catalog purpose is to track table location. The catalog is the central location to find existence of a table and additional information about each table (table name, schema, where the data stores)
 In hive metastore it contains a mapping of table name -> set of directories, while in modern catalog table name -> location of the table's most recent metadata file.\
-Why might systems introduce separate catalog layers (e.g. AWS Glue,
-Databricks Unity Catalog, in‑house catalog backed by PostgreSQL)? To provide flexibility and decouple the actual data. To discover the same data in different ways, manage multipule schemas to the same data for several users or uscases without stores it in different ways. To allow a catalog which could integrate with different compute engines.
+- Why might systems introduce separate catalog layers (e.g. AWS Glue,
+Databricks Unity Catalog, in‑house catalog backed by PostgreSQL)?\
+To provide flexibility and decouple the actual data. To discover the same data in different ways, manage multipule schemas to the same data for several users or uscases without stores it in different ways. To allow a catalog which could integrate with different compute engines.
 
 
 3. **Catalog Architecture:**  Explain typical components of a catalog service
@@ -115,8 +119,8 @@ Older table formats like hive table format are based on the contents of director
 5. **Metadata & Transaction Log:**  How do modern formats store their own metadata?  Discuss the concept of a transaction log or manifest file, and the distinction between file level metadata (e.g. Iceberg data file footers) and catalog entries.\
 Modern formats store their own metadata with a metadta layer which combines several components for example in icberg the metadata layer includes manifest files, which keep track of the data files (delete files, statistics and indexes about the data), manifest lists presents Iceberg table that containes a list of all the manifest files and metadata files which store metadata about an Icberg table at a certain point in time (schema, partition information, snapshots). Each time a change is made to an Iceberg table, a new metadata file is created and is registered as the latest version of the metadata file atomically via the catalog. The immutable metadata files considered as transaction logs which provides atomicy.
 When would you even need to think about files if the catalog abstracts them away?
-The catalog only collects all the last pointers to the files of the metadata layer
-and keep tracking them like a phone book.
+The catalog collects all the last pointers to the files of the metadata layer
+and keep tracking them like a phone book. All the files of the metadata layer are files we're getting the metadata or when modifying adding new metadata files.
 
 6. **Interoperability & Ecosystem:**  Describe how catalogs and formats enable
 multiple compute engines to work on the same data (Spark, Trino, Flink).

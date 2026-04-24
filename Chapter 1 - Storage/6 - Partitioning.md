@@ -44,18 +44,18 @@ Distinguish between horizontal and vertical partitioning, and between logical an
 - Composite partitioning - Unlike basic partitioning, which uses a single criterion, composite partitioning applies multiple criteria, allowing for a more granular and efficient organization of data. Based on two methods for example range-hash, range-list, hash-hash, etc.
 
 3. **Pruning & Optimization:** Explain how partition pruning works and why it’s critical for performance. How do query planners determine which partitions to scan?\
-Partition pruning prevents from the database from scanning irrelevant partitions while executing queries. It determines which partitions to scan based on the partitioned column that is used in query filters. If ihe partition column is not used in the query's filter condition, then the system won't know which of the partitions to ignore.\
+Partition pruning prevents from the database from scanning irrelevant partitions while executing queries. It determines which partitions to scan based on the partitioned column that is used in query filters. If the partition column is not used in the query's filter condition, then the system won't know which of the partitions to ignore.\
 Static partition pruning - happens at the compile time according to the query.
 Dynamic partition pruning - happens at runtime. It only knows what to prune (the search condition) in the runtime.
 
 4. **Maintenance & Evolution:** What challenges arise when partitions grow or have inconsistent metadata? 
-When the amount of partitions is growing,if the data in each partition is small it will cause a lot of metadata overhead while running operations over the data (small files problem and enormous amount of partitions) leading the needs of merging partitions (an action that needs to be seamless to the client which won't break their APIs) and dropping very old partitions to maximize efficiency.
+When the amount of partitions is growing, if the data in each partition is small it will cause a lot of metadata overhead while running operations over the data (small files problem and enormous amount of partitions) leading the needs of merging files (an action that needs to be seamless to the client which won't break their APIs, I read about someone who even needed to merge partitions, which is rebuilt the whole system again) and dropping very old partitions to maximize efficiency.
 
 5. **Bucketing & Data Layout:** What is bucketing, and how does it differ from partitioning? When is bucketing useful (e.g., joins, load balancing, reducing shuffle)?
 Bucketing distributed data into fixed-size buckets (files) based on the hash of a specific column.
 - Bucketing are files and partitioning are directories.
 - bucketing used for columns with high cardinality (customer id) and partitioning for low cardinality (country).
-- bucketing Are a fixed size which decides while creating the table (CLUSTERED BY) while partitioning are directories according to columns values.\
+- bucketing Are a fixed size which decides while creating the table (CLUSTERED BY) while partitioning are directories according to columns values (PARTITION BY).\
 How can bucketing complement partitioning in large datasets? On large datasets we want to reduce the number of scans. We use partition to divide the data according to the most used queries used, so the system could prune the data quickly as posible by the partition key on a low cordinality columns (low amount of elements). We can do a subpartition but on data of customer_id for example it will create a lot od subdirectories causing the small files problems. Therefore, to even be more efficient and scanning even less data we use bucketing. The buckets number is decided when the table is created so we have the ability to prevent the small files problems and also reduce the amount of scans inside a partition.
 
 ## Wrapping Up :trophy:
