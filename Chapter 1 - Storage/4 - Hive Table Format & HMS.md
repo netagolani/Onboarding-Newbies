@@ -77,7 +77,7 @@ How do external engines such as Apache Spark, Trino, and other tools interact wi
 What APIs and protocols are used?
 Thrift API (RPC), JDBC ,Rest API, Java client API.
 
-5. **Administration:**\
+5. **Administration:**
 - What are common administrative tasks (backup, schema upgrades, migration, repair)?
     - backup - backup periodiclly the metastore database.
     - schema upgrades- The metastore schema version needs to be compatible with hive binaries (hive cli, api) that are going to access the metastore. Upgrade schema is done by Hive schema tool to much hive version schema to the metastore schema.
@@ -107,7 +107,7 @@ Answer the following questions to understand table formats:
 
 ## Hive Table Formats - Answers
 
-1. **Definition & Role:**\
+1. **Definition & Role:**
 - What does a “table format” mean in Hive?\
 Table format allows querying tables in a specific format (a path format for example). 
 - How does it differ from table metadata stored in the metastore? The table metadata stored metadata in a table, their are databases, tables rows and columns. While in table format their  is a path which lead to several files which described together a table.
@@ -120,18 +120,18 @@ The logical schema needs to be with the same order columns of the file layout. I
 - ORC - supports ACID transaction. Columnar format arranges columns adjacent within the file for compression. It was designed to overcome limitations of the other Hive file formats. An ORC file contains group of row data called stripes. Eacg stripe holds index data, row data and stripe footer which contains a directory of stream locations.
 - Avro - apache avro is a row based storage format. Has a metadata header with json scheme, compression codec and sync maker which tells how to split the data.
 
-3. **Schema & Tables:**\
+3. **Schema & Tables:**
 - Explain the difference between managed and external tables, including ownership, lifecycle, and storage location semantics?\
 Managed tables hive owns the data. The data, properties and layout can only be changes via hive. When youre drop a table it deletes also it's files. Stores under the path /user/hive/warehouse/databse/tablename. In contrast to external table which can managed by processes outside of Hive. Fille would remain even if the table is dropped.
 
-4. **Integration with Storage:**\
+4. **Integration with Storage:**
 - How do table formats map to physical storage (directories, files)? With SerDe which defins in the metastore for each table. For example, for a table of parquets will be in the metastore a SerDe of parquet which defines the OutputFormat that needs to be wrriten as parquet files in directories from java objects. By doing a serilize method.
 - What conventions does Hive use for partitions, buckets, and file naming?
 partitions needs to be by a partition key - a column in the table. If it is partitioned by multipule columns it will defined as subdirectories. Buckets are presented as numeric files - 0000001_0, 0000002_0.
 
 ## Hive Table Formats - Q&A Answers
 1. What is partitions? How hive supports it?
-Partitioning is a design technique of dividing a table into smaller and managable pieces called partitions. partition key is the determinator of how the data will distributed.
+Partitioning is a design technique of dividing a table into smaller and managable pieces called partitions. partition key is the determinator of how the data will distributed. You can run queries via hive which creates tables with partitions, the partition metadata will be stored in the HMS.
 2. bucketing in hive vs partitions:\
 Paritions in hive - 
     - stores each partition in a seperate directory in HDFS. 
@@ -145,7 +145,8 @@ Bucketing in hive -
     - Defined by the `CLUSTERED BY (column_name) INTO XX BUCKETS`.
     - The result of  a hash function to the bucketed column determines which bucket a record will go into.
 
-In conclution, in bucketing the number of buckets is fixed so its not effected by the data. In contrast to partition which determines in which bucket to put the data.
+In conclution, in bucketing the number of buckets - files, is fixed so its not effected by the data. In contrast to partition which determines in which bucket to put the data.
+
 3. what happened when the metastore data base is down and the service is be accessed only up? Can we still connect to the data?\
 The service has a cache store so the metastore's data will be available only if the data exists in the cache.
 The size of the metastore cache can be restricted by a combination of cache white list and black list patterns. So only if the table considered as a white list it will be available.
