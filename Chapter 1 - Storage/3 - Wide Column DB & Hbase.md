@@ -196,20 +196,21 @@ In conclusion, you may use Thrift over Rest in disributed systems which transfer
 20. Major compaction resposibilies - Merge all the HFiles of a region to on single Hfile, delete reference files and data in splits, delete expired and deleted cells (according the tombstone markers).
 21. When does bloom filter applied and where it stores? Bloom filters provided in get operations to reduce the number of disk reads (do not work with scans). The Bloom filters are stored in the metadata of each HFile and never need to be updated. When a HFile is opened because a region is deployed to a RegionServer, the Bloom filter is loaded into memory.
 
-### Q&A - Answers
+### Q&A2 - Answers
 
 1. HDFS block vs HBase block -\
    - HBase block - Single unit of I/O, the smallest amount of data HBase can read or write in HBase the default is 64kb. HBase blocks has 4 types: DATA (store user data), META (metadata of the Hfile itself), INDEX (provide index over the cells contained in the DATA blocks) and BLOOM (contain a bloom filter over the same data blocks).
    - HDFS blocks - block is a file. In HDFS the files are wrriten to blocks which are write once read many in size of 128MB to improve performance.
-2. MetaCache - rotem needs to send me the ticket number to read it
-----------------
-3. Hbase regions limit - 1000 per regionServer.
-4. Thrift vs Native API (protocal wize)
-Native API - java client API.
-5. What is the namespace of the meta table - hbase.
-6. How to connect to Hbase and to HDFS?
-----------------
-7. Which compaction rewrite and delete the data to another region? major compaction.
+2. Hbase regions limit - 1000 per regionServer.
+3. Thrift vs Native API (protocal wize)
+Thrift - rpc, Native API - http.\
+writing here all the diffrences because I want to remember:
+- Thrift is good for a big amount of data, because its in a lower level in the network (the data is transfer as binaric) anf it is more efficient.
+- Rest is more human readable, but less efficient (for we servers, or small data transfering it can be enough).
+4. What is the namespace of the meta table - hbase:meta.
+5. How to connect to Hbase and to HDFS?
+Via RPC.
+6. Which compaction rewrite and delete the data to another region? major compaction.
 
 
 ### 🔄 Alternatives
