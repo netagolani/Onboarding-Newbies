@@ -99,7 +99,7 @@ So it won't be coupled to the compution engine as traditional warehouse.
 2. **The Concept Of Catalog**  
 - Describe the purpose of a metadata catalog.  How does it compare to Hive Metastore? (hint: the metastore *is* a catalog)\
 Metadata catalog purpose is to track table location. The catalog is the central location to find existence of a table and additional information about each table (table name, schema, where the data stores)
-In hive metastore it contains a mapping of table name -> set of directories, while in modern catalog table name -> location of the table's most recent metadata file.
+In hive, the metastore is the catalog. It contains a mapping of table name -> set of directories, while in modern catalog table name -> location of the table's most recent metadata file.
 - Why might systems introduce separate catalog layers (e.g. AWS Glue,
 Databricks Unity Catalog, in‑house catalog backed by PostgreSQL)?\
 To provide flexibility and decouple the actual data. To discover the same data in different ways, manage multipule schemas to the same data for several users or uscases without stores it in different ways. To allow a catalog which could integrate with different compute engines.
