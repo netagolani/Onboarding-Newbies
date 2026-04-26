@@ -76,6 +76,10 @@ Consistes of data layer, metadata layer and Icberg catalog.\
 
 5. What maintenance operations does Iceberg require, and why? 
    Discuss compaction, snapshot expiration, orphan file cleanup, and metadata cleanup.
+   - compaction - automating compaction (can be with airflow). There are three types of compactions. bin packing - combine files to bigger files with no global sorting (fast but not fully ordered). sorting - by one or more fields (efficient to query, longer compaction). zorder - sort by multipule fields equally and weighted (can improve even more read time, but longer compaction).
+   - snapshot expiration - to optimize storage but prevent from time travel to an expired snapshot. Snapshots will get deleted together during the expiration transaction. It can be by a particular timestamp and by a specific snapshot id
+   - orphan files - remove orphan files. Not in periodically way because it can be an intensive process. Orphan files are untracked files which where written by failed jobs. This action of removing orphan files is also optimizes storage. A special procedure will look at every file in your table’s default location an assess whether it relates to active snapshots. 
+   - metadata cleanup - Each change to a table produces a new metadata file to provide atomicity. Old metadata files are kept for history by default. To automatically delete older metadata files, set write.metadata.`delete-after-commit.enabled=true` in table properties. his will only delete metadata files that are tracked in the metadata log and will not delete orphaned metadata files.
 
 
 ### 🔄 Alternatives
