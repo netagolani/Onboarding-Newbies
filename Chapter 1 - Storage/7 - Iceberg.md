@@ -65,7 +65,7 @@ Consistes of data layer, metadata layer and Icberg catalog.\
 3. What is an Iceberg catalog, and what is its role? 
    Explain what a catalog manages (table namespace, metadata pointers, commits), why it’s required, and how it differs from a metastore. 
    Mention common catalog implementations.\
-   As I said, an Iceberg catalog is the first step in any operation. It points or references to the requested table by pointing the table's current metadata files. Every operation is done atomically after the pointer of the metadata file is updated in the catalog (commits, creating a table). In contrant to HMS which consist the path to the table and other metadata. Its only hold a pointer to the first step in the metadata layer which consist of files (against paths). The metadata are immutable files which created in every new updates providing flexbility by not being coupled to how the files are all organized and partitioned.
+   As I said, an Iceberg catalog is the first step in any operation. It points or references to the requested table by pointing the table's current metadata files. Every operation is done atomically after the pointer of the metadata file is updated in the catalog (commits, creating a table). In contrast to HMS which consist the path to the table and other metadata. Its only hold a pointer to the first step in the metadata layer which consist of files (against paths). The metadata are immutable files which created in every new updates providing flexbility by not being coupled to how the files are all organized and partitioned.
 
 4. How does Iceberg handle concurrent reads and writes? 
   Explain snapshot isolation, atomic commits, optimistic concurrency control, and conflict detection.\
@@ -80,6 +80,51 @@ Consistes of data layer, metadata layer and Icberg catalog.\
    - snapshot expiration - to optimize storage but prevent from time travel to an expired snapshot. Snapshots will get deleted together during the expiration transaction. It can be by a particular timestamp and by a specific snapshot id
    - orphan files - remove orphan files. Not in periodically way because it can be an intensive process. Orphan files are untracked files which where written by failed jobs. This action of removing orphan files is also optimizes storage. A special procedure will look at every file in your table’s default location an assess whether it relates to active snapshots. 
    - metadata cleanup - Each change to a table produces a new metadata file to provide atomicity. Old metadata files are kept for history by default. To automatically delete older metadata files, set write.metadata.`delete-after-commit.enabled=true` in table properties. his will only delete metadata files that are tracked in the metadata log and will not delete orphaned metadata files.
+
+### Additional Questions
+
+1. Do the metadata and the actual data have to be in the same place? I didnt understand the questions. But the thing is that the metadata exists under the metadata folder seperated from the data itself. For example, there is /orders/data and orders/metadata for the orders table. When the engine want to do a request over the table order, it goes to /orders/metadata/version-hint.txt. The only relevent content in this file will be an integer of the metadata file the engine needs to read. So I assume it has to be in the same directory of /orders/metadata.
+
+2. Does the metadata has to be stored in HDFS/S3? the metadata layer (metadata files, manifest files, manifest lists) lives in the system you use. For example, if you use s3 it will be in s3. But the catalog itself can be externally (as a JDBC catalog, for example).
+
+3. What are the types of metadata in Iceberg? manifest files, manifest lists, metadata files as I described earlier.
+
+4. What file formats are the metadata files?
+- manifest files - Avro file format. <hash>.avro
+- manifest list - Avro file format. snap-<hash>.avro
+- metadata files -  Json format. (v1.metadata.json, for example)
+
+5. What is snapshot? A manifest list in.
+
+6. Where the catalog exist? 
+- In s3/hdfs there's a file called version-hint.text in the table's metadata folder.
+- It can also be the hive metastore as the catalog.
+- JDBC catalog - an external database which has all the pointers in the DB as a catalog.
+
+7. What is JDBC catalog? Java Database Connectivity. Data stores for Iceberg's catalog interface. Such as MySQL or PostgreSQL (must support atomic transactions).
+
+8. What information is stored in the DB catalog?\
+There are two types of catalogs: file-based catalogs and service-based catalogs. File-based catalogs are less good for production environments in scenarios with multiple writers to tables which can cause inconsistency. In the file based catalog there's a file consist an integer of the metadata file version which known in the metadata path while in a db based catalog there is a map between the the table and the pointer of the current metadata file.
+
+9. Describe the scheme of the catalog DB.\
+A mapping between the table name to the path of the current pointer.
+
+
+10. Pros of REST over JDBC/Thrift.
+- requires fewer packages and dependencies compared to other catalogs. It just uses standard HTTP communication.
+- flexibility - any service is capable to handle restful requests and responses. The data store of the service can be many different things.
+- cloud agnostic - can use as a multicloud catalog.
+
+11. What actions are done to maintain the catalog?
+Expire snapshots, remove old metadata files, delete orphan files, compactions, rewrite manifests.
+
+12. What are common catalogs?\
+HMS, AWS glue catalog, JDBC catalog, Rest catalog
+
+13. Icberg v2 vs v3.
+- positional deletes in v2 are deprecated in v3 and instead its binary deletion vectors (Encoding deleted positions in a bitmap. A set bit at position P indicates that the row at position P is deleted.)
+- row lineage tracking - metadata fields that allow engines to detect row-level changes between commits (in v3)
+- variant type - a flexible column type for semi-structured json data, allowing untyped data without strict schema enforcement.
 
 
 ### 🔄 Alternatives
