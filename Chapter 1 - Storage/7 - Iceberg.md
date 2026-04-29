@@ -121,7 +121,7 @@ Expire snapshots, remove old metadata files, delete orphan files, compactions, r
 12. What are common catalogs?\
 HMS, AWS glue catalog, JDBC catalog, Rest catalog
 
-13. Icberg v2 vs v3.
+13. Iceberg v2 vs v3.
 - positional deletes in v2 are deprecated in v3 and instead its binary deletion vectors (Encoding deleted positions in a bitmap. A set bit at position P indicates that the row at position P is deleted.)
 - row lineage tracking - metadata fields that allow engines to detect row-level changes between commits (in v3)
 - variant type - a flexible column type for semi-structured json data, allowing untyped data without strict schema enforcement.
