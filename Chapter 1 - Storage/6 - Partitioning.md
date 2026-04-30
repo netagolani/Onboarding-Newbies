@@ -64,3 +64,11 @@ Review your answers with your mentor and identify scenarios where partitioning c
 ## Action Items
 - Identify storage systems you want to try partitioning in (e.g., Hive, Iceberg, PostgreSQL).
 - Prepare questions for the next mentor Q&A.
+
+## Q&A Answers - Partitions & Table Formats
+
+1. Does the metadata layet must be store in the same place of the data?
+2. Horizontal and Partitioning combination is called hybrid partitioning.
+3. Data skew - uneven distribution of data across different partitions.
+4. Partitioning which are unbalanced are data skew (very funny)
+5. What if I want to add information after bucketing the table? 
