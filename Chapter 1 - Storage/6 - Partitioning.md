@@ -67,8 +67,8 @@ Review your answers with your mentor and identify scenarios where partitioning c
 
 ## Q&A Answers - Partitions & Table Formats
 
-1. Does the metadata layet must be store in the same place of the data?
+1. Does the metadata layer must be store in the same place of the data? No
 2. Horizontal and Partitioning combination is called hybrid partitioning.
 3. Data skew - uneven distribution of data across different partitions.
 4. Partitioning which are unbalanced are data skew (very funny)
-5. What if I want to add information after bucketing the table? 
+5. What if I want to add information after bucketing the table? If you insert into a bucketed table, hive will create new buckets with _copy it will not edit or update the existing bucket instead it will create a new bucket with new values. You should partition in a way that there is no need for insert into a bucketed partition. Another idea is to create a temporary table and insert overwrite the table in that way your buckets will hold the all sorted customer_id and there will be no copy of files as we are insert overwriting the data into existing table.
