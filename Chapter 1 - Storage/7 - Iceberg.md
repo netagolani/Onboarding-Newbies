@@ -85,7 +85,7 @@ Consistes of data layer, metadata layer and Icberg catalog.\
 
 1. Do the metadata and the actual data have to be in the same place? I didnt understand the questions. But the thing is that the metadata exists under the metadata folder seperated from the data itself. For example, there is /orders/data and orders/metadata for the orders table. When the engine want to do a request over the table order, it goes to /orders/metadata/version-hint.txt. The only relevent content in this file will be an integer of the metadata file the engine needs to read. So I assume it has to be in the same directory of /orders/metadata.
 
-2. Does the metadata has to be stored in HDFS/S3? the metadata layer (metadata files, manifest files, manifest lists) lives in the system you use. For example, if you use s3 it will be in s3. But the catalog itself can be externally (as a JDBC catalog, for example).
+2. Does the metadata has to be stored in HDFS/S3? No.
 
 3. What are the types of metadata in Iceberg? manifest files, manifest lists, metadata files as I described earlier.
 
@@ -126,6 +126,43 @@ HMS, AWS glue catalog, JDBC catalog, Rest catalog
 - row lineage tracking - metadata fields that allow engines to detect row-level changes between commits (in v3)
 - variant type - a flexible column type for semi-structured json data, allowing untyped data without strict schema enforcement.
 
+### Q&A Answers
+1. Metadata in manifest list contains an array of structs, each sruct keeping track of a single manifest file. Each struct contains:
+   - location of data file
+   - partitions it belongs
+   - upper and lower bounds for partition columns of the data file
+2. Metadata in the metadata.json contains an Iceberg table at a certain point in time:
+   - table's schema
+   - partition information
+   - snapshots
+   - which snapshot is the current one
+3. Migrating HMS to create iceberg tables:
+Set <iceberg.engine.hive.enabled=true> in its Hadoop configuration. (version-hint.xml)
+4. What are the pros of rest catalog from others? The REST catalog defines a standart HTTP API specification for catalog operations, eliminating the need for engine-specific catalog implementations. Becomes the recommended approach because:
+- vendor neutrality - works consistently accross spark, trino, flink.
+- simplified client configuration - single HTTP endpoint instead of engine specific settings.
+- RESTful interface with JWT authentication support.
+- Extensibility - can add features like caching, auditing, or access control.
+5. Why S3 integrates better with iceberg rather then HDFS? Because both of them are doing snapshots which is a waste of data.
+6. How to recreate the catalog if the DB failed? 
+- find the latest metadata.json file (in hive its easy - the latest version of the metadata.json, in s3 its by the <LastModified> timestamp).
+- re-register the table using <register_table> a producer of spark which required the values of the table name and the metadata_file.
+7. What the name of handling confilcts in Iceberg? optimistic concurrency control - conflicts are detected at commit time. The transaction flow goes like this: 
+- Reads the current table snapshot.
+- Write new data files.
+- Load the table’s latest metadata.
+- Data check conflict.
+- Generate new metadata files.
+- Commit the metadata files to the catalog. If the commit failed retries as the number of configurations.
+8. Puffin files contains:
+- deletion vectors - Bitmap structures tracking deleted rows without rewriting files.
+- Statistics and Indices - Additional metadata for performance enhancement.
+9. What is orphan files? Files that are no longer associated with any application or process.
+10. boring catalog - A lightweight file-based Iceberg catalog implementation using a single (boring) JSON file. The goal is to let people experiment easily with Iceberg’s commit mechanism and remove some of the usual friction around catalog setup.
+11. Compaction strategies:
+- binPacking - write small files to large files regardless of record order.
+- sort - Run compaction, sort the records by one or more fields.
+- zOrder - Equal weighting of fields to be sorted by in compaction.
 
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Iceberg and an industry alternative.
