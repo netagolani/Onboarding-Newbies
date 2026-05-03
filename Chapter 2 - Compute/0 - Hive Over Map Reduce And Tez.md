@@ -47,6 +47,48 @@ Explain how Hive breaks a query into execution stages, how tasks are distributed
    What is Apache Tez, and how does it improve Hive query execution? Explain how Tez replaces chains of MapReduce jobs with a Directed Acyclic Graph (DAG) of tasks, reducing unnecessary disk I/O and improving query performance.
 
 ---
+### Guide Questions - Answers
+
+1. **Hive as a Query Platform:**
+   Hive provides tables, schemas, and SQL querying on top of distributed storage systems such as HDFS. Explain Hive’s role as a platform layer that sits above storage and relies on external compute engines to execute queries.\
+   Hive provides an abstraction layer on top of HDFS that represents the data as tables with rows, columns, and data types to query and analyze using an SQL interface called HiveQL. It abstracts the complexity of writing MapReduce code by allowing users to interact with structured data through familiar query syntax. Converts HiveQL queries into MapReduce, Tez, or Spark jobs.
+
+2. **Hive Query Stages and Task Execution:**  
+   When Hive translates a SQL query into a distributed job, how is the work divided into stages and tasks?  
+   Explain how Hive breaks a query into execution stages, how tasks are distributed across the cluster, and how intermediate results are passed between stages.\
+   The work is divided into stages and tasks by the compiler according to the metadata it gets from the HMS. Every stage in the execution plan is either a map/reduce job on HDFS.
+   Hive breaks a query into execution stages by the compiler which generates an execution plan with optimizations. Tasks are distributed across the cluster by Yarn. Intermediate results are passed between stages via shuffling while there written in temporary files in the HDFS.
+
+3. **Hive Query Execution Pipeline:**  
+   What happens when a user runs a query in Hive? Describe the main stages of execution: SQL parsing, logical planning, physical planning, and submitting jobs to an execution engine such as MapReduce or Tez.\
+   - execute query - the user submits a query from the UI to the driver (JDBC/ODBC).
+   - get plan - the driver creates a session with the compiler to generate an execution plan.
+   - get metadata - the compiler sends metadata request to HMS.
+   - send metadata - the HMS send the metadata to the compiler. The compiler performaing type-cheking and semantic analysis. Generates the execution plan. The plan is a DAG of stages
+   - send plan - The compiler sends the execution plan to the driver.
+   - execution plan - the driver sends the execution plan to the execution engine.
+   - submit job - the execution engine then sends the stages for execution on HDFS. For each task (mapper or reducer) the deserializer read the rows from HDFS files and then written to the HDFS temporary file through the serializer. The final remporary file is then moved to the table's location.
+   - send result - the execution engine reads the temporary files directly from HDFS as part of a fetch call from the driver. The driver sends results to the Hive interface.
+
+   The driver includes internal stages: parser, planner, optimizer, executor.
+   logical planning (what data) by the optimizer can be:
+   - predicate pushdown - a technique that pushes down the filter conditions to the storage layer, so that the storage layer only returns the rows that satisfy the filter conditions. Improve performance.
+   - Column/projection pruning - a technique that removes the unnecessary columns from the query plan, so that only the columns that are required for the query are processed.
+   - join reordering - optimized join order for performance.
+
+   physical planning (how to execute data) by the optimizer can be:
+   - partition/bucketing pruning - skipping irelevent partitions or buckets.
+   - perform join on the mapper.
+   
+
+4. **MapReduce Fundamentals:**  
+   What is the MapReduce programming model? Explain the roles of the `map phase`, `shuffle and sort`, and `reduce phase`. Why was MapReduce originally used as Hive’s execution engine?\
+   MapReduce programming model:
+   - `map phase` - map phase accepts key value pairs (k,v) as input.
+   - `shuffle and sort` - gets the output of the mapping phase. Different values are grouped together based on same keys. The output will be (k,v[]).
+   - `reduce phase`- gets the output of the shffling and sorting phase. The reducer function is executed to all the values on each key and computes the final output.
+
+---
 
 ### 🔄 Alternatives
 Assignment: Briefly research another distributed processing framework used for large-scale data processing.
