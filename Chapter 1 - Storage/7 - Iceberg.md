@@ -137,7 +137,7 @@ HMS, AWS glue catalog, JDBC catalog, Rest catalog
    - snapshots
    - which snapshot is the current one
 3. Migrating HMS to create iceberg tables:
-Set <iceberg.engine.hive.enabled=true> in its Hadoop configuration. (version-hint.xml)
+Set <iceberg.engine.hive.enabled=true> in its Hadoop configuration. (version-hint.xml). And add to the tables table a "metadata_location" column.
 4. What are the pros of rest catalog from others? The REST catalog defines a standart HTTP API specification for catalog operations, eliminating the need for engine-specific catalog implementations. Becomes the recommended approach because:
 - vendor neutrality - works consistently accross spark, trino, flink.
 - simplified client configuration - single HTTP endpoint instead of engine specific settings.
