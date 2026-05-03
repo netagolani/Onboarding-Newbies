@@ -88,6 +88,14 @@ Explain how Hive breaks a query into execution stages, how tasks are distributed
    - `shuffle and sort` - gets the output of the mapping phase. Different values are grouped together based on same keys. The output will be (k,v[]).
    - `reduce phase`- gets the output of the shffling and sorting phase. The reducer function is executed to all the values on each key and computes the final output.
 
+5. **Introduction to Apache Tez:**  
+   What is Apache Tez, and how does it improve Hive query execution? Explain how Tez replaces chains of MapReduce jobs with a Directed Acyclic Graph (DAG) of tasks, reducing unnecessary disk I/O and improving query performance.\
+   Apache Tez is a framework for building very high performances data processingby creating complex DAGs. Tez sees the big picture and created the most efficient DAG In contrast to map reduce which creates mappers and reducers causing alot of overhead with many stages. Tez sits on top of Yarn.
+   - Less I/O to disk - MapReduce access the disk multipule times during processing, resulting at least 5-6 disk access for a single mapreduce job.
+   - vectorization - Tez gets data from disk, performs all the steps, stores the intermediate results in the memory performs vectorization (processes batch rows instead of one row at a time).
+   - container reuse - tez enables to reuse containers while in mapreduce there is a new container for each task in the job.
+   - sorting - mapreduce sort the ouput from each map while Tez doesn't due to is complex Dag which is planned before execution.
+
 ---
 
 ### 🔄 Alternatives
