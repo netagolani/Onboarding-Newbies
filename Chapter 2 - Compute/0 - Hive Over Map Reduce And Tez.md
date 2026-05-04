@@ -100,14 +100,15 @@ Explain how Hive breaks a query into execution stages, how tasks are distributed
 
 1. Hive aux - auxiliary jars are jars which enables additional capabilities that configured in the hive class path. Such as custom SerDe, dimention lookup and iceberg hive routine.
 
-2. Where are the intermidiate results stored in MR and Tez?
-
-3. What is stored in the memory and what is stored of disk in Tez?
-
-4. Why in MR there is a network overhead? (connected to the disk it writes to)
-
-5. Why does Tex can reuse containers in contrast MR?
-
+2. Where are the intermidiate results stored in MR and Tez?\
+MR - intermidiate results are stored in the HDFS.\
+Tez - intermidiate results are stored in the memory. Unless it gets to the threshholdsand of tez.runtime.unordered.output.buffer.size-mb and then spills to the disk.
+3. What is stored in the memory and what is stored of disk in Tez?\
+Intermidiate results are stored in memory (unless it gets to the maximum  buffer) while final results are wrriten to HDFS.
+4. Why in MR there is a network overhead?
+MR has a network overhead because of the shuffling method which transfers data from servers and because all of the intermidiate results are written to HDFS must be replicated and approved by the name node.
+5. Why does Tex can reuse containers in contrast MR?\
+Tez can reuse containers because after finishing a task, Tez doesnt release the container's resources back to Yarn. It reassing a new task to the same container. (if the local data is relevent to the new task its even more efficient).
 6. Jobs, Tasks & Stages in MR.
 
 7. Who is responsible of how many workers (containers) in MR and Tez?
