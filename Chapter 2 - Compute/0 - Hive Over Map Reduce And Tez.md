@@ -96,7 +96,38 @@ Explain how Hive breaks a query into execution stages, how tasks are distributed
    - container reuse - tez enables to reuse containers while in mapreduce there is a new container for each task in the job.
    - sorting - mapreduce sort the ouput from each map while Tez doesn't due to is complex Dag which is planned before execution.
 
+### Q&A - Answers
+
+1. Hive aux - auxiliary jars are jars which enables additional capabilities that configured in the hive class path. Such as custom SerDe, dimention lookup and iceberg hive routine.
+
+2. Where are the intermidiate results stored in MR and Tez?
+
+3. What is stored in the memory and what is stored of disk in Tez?
+
+4. Why in MR there is a network overhead? (connected to the disk it writes to)
+
+5. Why does Tex can reuse containers in contrast MR?
+
+6. Jobs, Tasks & Stages in MR.
+
+7. Who is responsible of how many workers (containers) in MR and Tez?
+
+8. Problems of big or small files in hive
+
+9. Who is resposible of doing retries while quering hive?
+
+10. Fault tolerance in Hive.
+
+11. Usecases of Hive.
+
 ---
+
+### Things I Want to Remember:
+-  Yarn was created to decouple resource managment from job execution.
+- Yarn is the resource management layer of Hadoop. 
+- Yarn allows multipule engines to run on single cluster.
+- HiveServer2 is a service that enables clients to execute queries against hive. Supports multi-client concurrency and authentication. Better support for clients like JDBC and ODBC.
+- HS2 is includes the components of thrift server, compiler, driver.
 
 ### 🔄 Alternatives
 Assignment: Briefly research another distributed processing framework used for large-scale data processing.
