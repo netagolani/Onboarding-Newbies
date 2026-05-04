@@ -109,12 +109,16 @@ Intermidiate results are stored in memory (unless it gets to the maximum  buffer
 MR has a network overhead because of the shuffling method which transfers data from servers and because all of the intermidiate results are written to HDFS must be replicated and approved by the name node.
 5. Why does Tex can reuse containers in contrast MR?\
 Tez can reuse containers because after finishing a task, Tez doesnt release the container's resources back to Yarn. It reassing a new task to the same container. (if the local data is relevent to the new task its even more efficient).
-6. Jobs, Tasks & Stages in MR.
-
-7. Who is responsible of how many workers (containers) in MR and Tez?
-
-8. Problems of big or small files in hive
-
+6. Jobs, Tasks & Stages in MR.\
+- Job - the whole mission that needs to be done.
+- Stage - sequence of transformations that can be executed in a single pass, without any shuffling of data. When a job is divided, it is split into stages.
+- Task - Each stage comprises tasks, and all the tasks within a stage perform the same computation.
+7. Who is responsible of how many workers (containers) in MR and Tez?\
+MR - the compiler in the HS2 decides according to the data size based on the input splits (blocks) and Yarn only allocates the resources.
+Tez -  the application master, and then also requests from Yarn.
+8. Problems of big or small files in hive.\
+- Big files - big scans, high latency, especially if its wrriten in inefficient file format which required full scanning (without any header or footer, for example in a txt file).
+- Small files - more I/O overhead, because there are many tasks (many little small files) and more containers needs to be allocated from Yarn.
 9. Who is resposible of doing retries while quering hive?
 
 10. Fault tolerance in Hive.
