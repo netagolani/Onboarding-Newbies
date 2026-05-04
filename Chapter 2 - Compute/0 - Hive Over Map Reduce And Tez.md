@@ -116,11 +116,11 @@ Tez can reuse containers because after finishing a task, Tez doesnt release the 
 7. Who is responsible of how many workers (containers) in MR and Tez?
 MR - the compiler in the HS2 decides according to the data size based on the input splits (blocks) and Yarn only allocates the resources.
 Tez -  the application master, and then also requests from Yarn.
-8. Problems of big or small files in hive.\
+8. Problems of big or small files in hive.
 - Big files - big scans, high latency, especially if its wrriten in inefficient file format which required full scanning (without any header or footer, for example in a txt file).
 - Small files - more I/O overhead, because there are many tasks (many little small files) and more containers needs to be allocated from Yarn.
 9. Who is resposible of doing retries while quering hive?
-The HS2.
+The HS2 (driver).
 10. Fault tolerance in Hive.\
 As soon as data is analyzed it replicated to other machines (written to HDFS).
 11. Usecases of Hive.
