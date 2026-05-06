@@ -70,8 +70,22 @@ Answer these questions to cover Trino’s major architectural and operational co
 2. UDF - trino supports user-defined functions UDFs, which allow you to write your own function implementations and deploy them in Trino to execute within SQL queries. Return a single output value. Inline UDF - only valid within the context of the query. Catalog UDF - to be used in any future query.
 3. The connection between connector and catalog - every catalog uses a specific connector. A catalog is a collection of configuration properties used to access a specific data source with a required connector by the property connector.name.
 4. distributed plan vs logical plan -
-- logical plan - after getting a statement in a text format, the coordinator parses and analyzes it. Then it creates a query plan which represents the needed steps to process the data and return the results per SQL statement. It uses the Metadata SPI to get information about tables, columns and types to validate the query and the statistics SPI to perform cost-based query optimizations during planning.
-- distributed plan - extansion of the simple query plan consisting of one ore more stages. The data location SPI facilitated in the creation of the distributed query plan.
+   - logical plan - after getting a statement in a text format, the coordinator parses and analyzes it. Then it creates a query plan which represents the needed steps to process the data and return the results per SQL statement. It uses the Metadata SPI to get information about tables, columns and types to validate the query and the statistics SPI to perform cost-based query optimizations during planning.
+   - distributed plan - extansion of the simple query plan consisting of one ore more stages. The data location SPI facilitated in the creation of the distributed query plan.
+5. Views Types -
+   - simple view - ach time we access a regular view, it runs the relative query in the background.
+   - materialized view - stores data persistently on the main storage. It serves as a snapshot view of the data. Materialized views can improve query performance resulting in faster access.
+Implementation of views in Trino via hive connector - If using Hive views from Trino is required, you must compare results in Hive and Trino for each view definition to ensure identical results. There are three modes to handle hive views.
+   - Disabled - the default behavior is to ignore Hive views.
+   - Legacy - translates HiveQL query that defines a veiw as if it is written in SQL, without any translations. It can leads to problems and errors.
+   - Experimental - Analyze, process and rewrite Hive views. Contained expressions and statements.
+*****still need to understand the implementation of trino in context to the views types.
+6. Trino optimizations -
+   - predicate pushdown - optimizes row-based filtering. Filter unnecessary rows from a condition in a `WHERE` clause. The processing is pushed down to the data source by the connectorand then processed by the data source. This reduces the network traffic between Trino and the data source and improved overall query performance.
+   - Projection pushdown - column-based filtering by the select clause.
+   - join enumaration - Trino uses Table statistics provided by connectors to estimate the costs for different join orders and automatically picks the join order with the lowest computed costs.
+7. Falut tolerance execution - feature that is turend of by defualt. Is a mechanism in Trino that enables a cluster to handle query failures by retrying queries or their components tasks in the event of worker fails or lack of resources. Intermediate exchange data is spooled and can reuse by another worker.
+8. When configured, the Trino cluster buffers data used by the workers during query processing. When failure, he coordinator reschedules processing of the failed piece of work on another worker. This allows query processing to continue using buffered data. he coordinator node uses a configured exchange manager service that buffers data during query processing in an external location, such as an S3 object storage bucket. Worker nodes send data to the buffer as they execute their query tasks.
 
 
 ### 🔄 Alternatives
