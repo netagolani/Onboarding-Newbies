@@ -47,8 +47,7 @@ Answer these questions to understand the broader category of distributed query e
 Answer these questions to cover Trino’s major architectural and operational concepts.
 
 1. **Purpose & Position in the Data Stack:**  
-   What is Trino, and where does it sit in the data architecture? Explain its role as a distributed MPP SQL engine, how it differs from storage systems, and when it should be used instead of other query engines.
-
+   What is Trino, and where does it sit in the data architecture? Explain its role as a distributed MPP SQL engine, how it differs from storage systems, and when it should be used instead of other query engines.\
 2. **Architecture & Query Execution:**  
    How is Trino architected, and how does it execute queries in a distributed environment? Discuss the roles of the Coordinator and Workers, stages and tasks, data exchanges, and the execution model.
 
@@ -65,6 +64,15 @@ Answer these questions to cover Trino’s major architectural and operational co
    How does Trino Gateway enable high availability and workload isolation across multiple Trino clusters? Explain how it provides a single entry point, performs rule-based query routing and load balancing, monitors cluster health, and enables failover and multi-cluster isolation beyond what a single Trino coordinator can support.
 
 ---
+
+## Q&A #1 Answers
+1. SPI - service provider interface. Defines the functionality a connector hat to implement. By implement SPI, Trino can use standart operations internally to connect to any data source and perform operations on it.
+2. UDF - trino supports user-defined functions UDFs, which allow you to write your own function implementations and deploy them in Trino to execute within SQL queries. Return a single output value. Inline UDF - only valid within the context of the query. Catalog UDF - to be used in any future query.
+3. The connection between connector and catalog - every catalog uses a specific connector. A catalog is a collection of configuration properties used to access a specific data source with a required connector by the property connector.name.
+4. distributed plan vs logical plan -
+- logical plan - after getting a statement in a text format, the coordinator parses and analyzes it. Then it creates a query plan which represents the needed steps to process the data and return the results per SQL statement. It uses the Metadata SPI to get information about tables, columns and types to validate the query and the statistics SPI to perform cost-based query optimizations during planning.
+- distributed plan - extansion of the simple query plan consisting of one ore more stages. The data location SPI facilitated in the creation of the distributed query plan.
+
 
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Trino and an industry alternative.
