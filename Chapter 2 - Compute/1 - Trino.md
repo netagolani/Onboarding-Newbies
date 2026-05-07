@@ -87,14 +87,12 @@ Implementation of views in Trino via hive connector - If using Hive views from T
 7. Fault tolerance execution - feature that is turned of by defualt. Is a mechanism in Trino that enables a cluster to handle query failures by retrying queries or their components tasks in the event of worker fails or lack of resources. Intermediate exchange data is spooled and can reuse by another worker.
 When configured, the Trino cluster buffers data used by the workers during query processing. In case of failure, the coordinator reschedules processing of the failed piece of work on another worker. This allows query processing to continue using buffered data. The coordinator node uses a configured exchange manager service that buffers data during query processing in an external location, such as an S3 object storage bucket. Worker nodes send data to the buffer as they execute their query tasks. You can configure it in a scope of cluster with different retries policies according to the cluster type.
 8. Trino Gateway - The load balancer, proxy server and configurable routing gateway for multiple trino clusters. sers don’t need to worry about what catalog and data source is available in what Trino cluster. Trino Gateway exposes one URL for them all. Administrators can ensure routing is correct and use the REST API to configure the necessary rules.
-9. dynamic filtering
-10. Resource groups - 
-11. What is Impersonation? User Impersonation allows Administrators to access and operate as if they were logged in as that User.
-12. Explain & Analyze commands -
+9. What is Impersonation? User Impersonation allows Administrators to access and operate as if they were logged in as that User.
+10. Explain & Analyze commands -
     - explain - Show the logical or distributed execution plan of a statement, or validate the statement. The distributed plan is shown by default. validate returns true or false checking if the statement is valid. TYPE { LOGICAL | DISTRIBUTED | VALIDATE }
     - analyze - Collects table and column statistics for a given table.
-13. Caching - File system caching keeps copies of the retrieved files on a local cache storage, separate for each node. Over time the same files from object storage are cached on any nodes that require the data file for processing a specific task. Each cache on each node is managed separately, following the TTL and size configuration, and cached files are evicted from the cache.
-14. What you have in Trino UI - you need to authenticate to the UI firstly.
+11. Caching - File system caching keeps copies of the retrieved files on a local cache storage, separate for each node. Over time the same files from object storage are cached on any nodes that require the data file for processing a specific task. Each cache on each node is managed separately, following the TTL and size configuration, and cached files are evicted from the cache.
+12. What you have in Trino UI - you need to authenticate to the UI firstly.
     The main page has a list of queries along with information like unique query ID, query text, query state (Queued, Running, Blocked, Failed). I can click the query for more details with summery section, graphical representaion of various stages and list of tasks. It also has a buttom to kill the currently running query.
     
 ## Q&A #2 Answers
@@ -103,21 +101,24 @@ When configured, the Trino cluster buffers data used by the workers during query
    - Query - automatically retry a query in the event of an error occuring on a worker node. Ideal for cluster of small queries.
    - Task - retry individual query tasks in the event of failure. Must configure an exchange manager (responsible for storing spooled data). Ideal for executing large batch queries.
 The  retry policy configured in the cluster level.
-2. How I decide the wieght of a query
------
+2. How I decide the priority of a query?
+According to the selector of the query.
 3. Which parameters can be configured in the selectors? User, userGroup, source, queryText, queryType, clientTags, group.
 4. Access Control - can handle and restrict actions. Enforce authorization from trino before the connection authorization. There are multipule types of access control and you can combine them but it can cause collisions.
    - File-based access control - json files which defines the acess control to role/user/group in levels of catalog, schema and tables. Kind of messy solution of handling access control with big jsons files.
    - Ranger access control - apache framework to manage access controls.
-4. JMX - exposes large number of different metrics via Java Management Extensions. You can also use the JMX connector and query the metrics using SQL. For example heap size, thread counts, information about trino queries and tasks, etc.
-5. gateway dependencies on set up: Required an SQL database like postgreSQL (usr, password, connection url, driver, disable or enable migrations. HTTP headers must be enabled `http-server.process-forwarded=true`. Set all needed in the config.yaml and the helm set up (adding backendState) configuration, activate JMX monitoring in all trino clusters
-6. cluster classification of the gateway
-7. How resource groups related to the gateway
-8. How to add new network rules to the gateway?
-9. What is external routing service?
-10. Two types of cache in trino? file system cache and metadata cache (iceberg supports caching metadara in the coordinator meory, enabled by default)
-11. What information is kept in the cache? file caching for example to file from table in hdfs.
-12. Explain Analyze command - Execute the statement and show the distributed execution plan of the statement along with the cost of each operation.
+5. JMX - exposes large number of different metrics via Java Management Extensions. You can also use the JMX connector and query the metrics using SQL. For example heap size, thread counts, information about trino queries and tasks, etc.
+6. gateway dependencies on set up: Required an SQL database like postgreSQL (usr, password, connection url, driver, disable or enable migrations. HTTP headers must be enabled `http-server.process-forwarded=true`. Set all needed in the config.yaml and the helm set up (adding backendState) configuration, activate JMX monitoring in all trino clusters
+7. cluster classification of the gateway: Trino gateway knows which catalog is navigated to which cluster by the user or by tags for now.
+8. How resource groups related to the gateway: The gateway only shows information about resource groups via the UI.
+9. How to add new routing rules to the gateway? You need to configure in the routing rule yaml (config map) a routing group and map it to a specific cluster.
+10. What is external routing service? Instead of configuring the routing in the routing rule yaml it can be more complex routing with an external routing service which classifying the the RoutingGroup with additinal selections before getting to the gateway.
+11. Two types of cache in trino? file system cache and metadata cache (iceberg supports caching metadara in the coordinator meory, enabled by default)
+12. What information is kept in the cache? file caching for example to file from table in hdfs.
+13. Explain Analyze command - Execute the statement and show the distributed execution plan of the statement along with the cost of each operation.
+14. What is more important strong worker or strong coordinator? strong coordinator, of course. The coordinator is the single point of failure of the cluster, which resposible of coordinating all the queries while a worker is just a work and there is fault tolerance execution plan for that.
+15. Tools for understanding performance and progress of a query? Superset, grafana dashboards and elastic dashboards. JMX monitoring.
+16. Pros and Cons of JVM in trino: It has memory management by the GC, common API to handle I/O, JMX metrics,compiled into bytecode. But the performance is slowerthen programs wrriten in native languages for specific platform with optimizations.
    
 
 ### 🔄 Alternatives
