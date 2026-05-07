@@ -66,12 +66,12 @@ Answer these questions to cover Trino’s major architectural and operational co
 ---
 
 ## Q&A #1 Answers
-1. SPI - service provider interface. Defines the functionality a connector hat to implement. By implement SPI, Trino can use standart operations internally to connect to any data source and perform operations on it.
+1. SPI - service provider interface. Defines the functionality a connector has to implement. By implement SPI, Trino can use standart operations internally to connect to any data source and perform operations on it.
 2. UDF - trino supports user-defined functions UDFs, which allow you to write your own function implementations and deploy them in Trino to execute within SQL queries. Return a single output value. Inline UDF - only valid within the context of the query. Catalog UDF - to be used in any future query.
 3. The connection between connector and catalog - every catalog uses a specific connector. A catalog is a collection of configuration properties used to access a specific data source with a required connector by the property connector.name.
 4. distributed plan vs logical plan -
    - logical plan - after getting a statement in a text format, the coordinator parses and analyzes it. Then it creates a query plan which represents the needed steps to process the data and return the results per SQL statement. It uses the Metadata SPI to get information about tables, columns and types to validate the query and the statistics SPI to perform cost-based query optimizations during planning.
-   - distributed plan - extansion of the simple query plan consisting of one ore more stages. The data location SPI facilitated in the creation of the distributed query plan.
+   - distributed plan - extansion of the simple query plan consisting of one or more stages. The data location SPI facilitated in the creation of the distributed query plan.
 5. Views Types -
    - simple view - ach time we access a regular view, it runs the relative query in the background.
    - materialized view - stores data persistently on the main storage. It serves as a snapshot view of the data. Materialized views can improve query performance resulting in faster access.
@@ -84,9 +84,41 @@ Implementation of views in Trino via hive connector - If using Hive views from T
    - predicate pushdown - optimizes row-based filtering. Filter unnecessary rows from a condition in a `WHERE` clause. The processing is pushed down to the data source by the connectorand then processed by the data source. This reduces the network traffic between Trino and the data source and improved overall query performance.
    - Projection pushdown - column-based filtering by the select clause.
    - join enumaration - Trino uses Table statistics provided by connectors to estimate the costs for different join orders and automatically picks the join order with the lowest computed costs.
-7. Falut tolerance execution - feature that is turend of by defualt. Is a mechanism in Trino that enables a cluster to handle query failures by retrying queries or their components tasks in the event of worker fails or lack of resources. Intermediate exchange data is spooled and can reuse by another worker.
-8. When configured, the Trino cluster buffers data used by the workers during query processing. When failure, he coordinator reschedules processing of the failed piece of work on another worker. This allows query processing to continue using buffered data. he coordinator node uses a configured exchange manager service that buffers data during query processing in an external location, such as an S3 object storage bucket. Worker nodes send data to the buffer as they execute their query tasks.
+7. Fault tolerance execution - feature that is turned of by defualt. Is a mechanism in Trino that enables a cluster to handle query failures by retrying queries or their components tasks in the event of worker fails or lack of resources. Intermediate exchange data is spooled and can reuse by another worker.
+When configured, the Trino cluster buffers data used by the workers during query processing. In case of failure, the coordinator reschedules processing of the failed piece of work on another worker. This allows query processing to continue using buffered data. The coordinator node uses a configured exchange manager service that buffers data during query processing in an external location, such as an S3 object storage bucket. Worker nodes send data to the buffer as they execute their query tasks. You can configure it in a scope of cluster with different retries policies according to the cluster type.
+8. Trino Gateway - The load balancer, proxy server and configurable routing gateway for multiple trino clusters. sers don’t need to worry about what catalog and data source is available in what Trino cluster. Trino Gateway exposes one URL for them all. Administrators can ensure routing is correct and use the REST API to configure the necessary rules.
+9. dynamic filtering
+10. Resource groups - 
+11. What is Impersonation? User Impersonation allows Administrators to access and operate as if they were logged in as that User.
+12. Explain & Analyze commands -
+    - explain - Show the logical or distributed execution plan of a statement, or validate the statement. The distributed plan is shown by default. validate returns true or false checking if the statement is valid. TYPE { LOGICAL | DISTRIBUTED | VALIDATE }
+    - analyze - Collects table and column statistics for a given table.
+13. Caching - File system caching keeps copies of the retrieved files on a local cache storage, separate for each node. Over time the same files from object storage are cached on any nodes that require the data file for processing a specific task. Each cache on each node is managed separately, following the TTL and size configuration, and cached files are evicted from the cache.
+14. What you have in Trino UI - you need to authenticate to the UI firstly.
+    The main page has a list of queries along with information like unique query ID, query text, query state (Queued, Running, Blocked, Failed). I can click the query for more details with summery section, graphical representaion of various stages and list of tasks. It also has a buttom to kill the currently running query.
+    
+## Q&A #2 Answers
 
+1. What is the other restart policy exept of `TASK`?
+   - Query - automatically retry a query in the event of an error occuring on a worker node. Ideal for cluster of small queries.
+   - Task - retry individual query tasks in the event of failure. Must configure an exchange manager (responsible for storing spooled data). Ideal for executing large batch queries.
+The  retry policy configured in the cluster level.
+2. How I decide the wieght of a query
+-----
+3. Which parameters can be configured in the selectors? User, userGroup, source, queryText, queryType, clientTags, group.
+4. Access Control - can handle and restrict actions. Enforce authorization from trino before the connection authorization. There are multipule types of access control and you can combine them but it can cause collisions.
+   - File-based access control - json files which defines the acess control to role/user/group in levels of catalog, schema and tables. Kind of messy solution of handling access control with big jsons files.
+   - Ranger access control - apache framework to manage access controls.
+4. JMX - exposes large number of different metrics via Java Management Extensions. You can also use the JMX connector and query the metrics using SQL. For example heap size, thread counts, information about trino queries and tasks, etc.
+5. gateway dependencies on set up: Required an SQL database like postgreSQL (usr, password, connection url, driver, disable or enable migrations. HTTP headers must be enabled `http-server.process-forwarded=true`. Set all needed in the config.yaml and the helm set up (adding backendState) configuration, activate JMX monitoring in all trino clusters
+6. cluster classification of the gateway
+7. How resource groups related to the gateway
+8. How to add new network rules to the gateway?
+9. What is external routing service?
+10. Two types of cache in trino? file system cache and metadata cache (iceberg supports caching metadara in the coordinator meory, enabled by default)
+11. What information is kept in the cache? file caching for example to file from table in hdfs.
+12. Explain Analyze command - Execute the statement and show the distributed execution plan of the statement along with the cost of each operation.
+   
 
 ### 🔄 Alternatives
 Assignment: You are required to research and write a comparative analysis between Trino and an industry alternative.
