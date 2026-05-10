@@ -36,7 +36,7 @@ Think through the following questions; by answering them you’ll touch every ma
           - Narrow Transformation - one to one, narrow dependencies (map, filter).
           - Wide Transformation - one to many, wide dependencies, required shuffling and represent a stage boundary in the DAG. (groupByKey, reduceByKey, join)
   - action - operations that trigger the physical execution plan. Returns value to either the driver program or to external storage system. Operations which initiate computations and produce a result or a side effect. (colect, count, first, saveAsTextFile).
-- Fault tolerance in Apache Spark -\
+- Fault tolerance in Apache Spark -
     - Lineage Information - Is a DAG that represents the sequence of transformations applied to an RDD. Lineage information serves as a recipe or set of instructions to recompute lost or corrupted data partitions in case of node failures. It provides a clear history of how an RDD was derived from its source data, allowing Spark to re-execute the transformations that led to its creation.
     - Data Replication - for RDDs. By default, data is replicated at least once across different nodes, reducing the risk of data lose due to node failures.
     - Checkpointing - save the state of an RDD to a storage system like HDFS. Fast recovery instead of recomputong the entire lineage.
@@ -44,6 +44,7 @@ Think through the following questions; by answering them you’ll touch every ma
     - Pesistent Storage - Spark stores intermidiate results as a persisted data in case of node failures instead of recomputing it.
     - Driver Recovery - If the driver node fails, the driver’s state can be recovered by restarting the application and re-executing the driver code.
     - Dynamic Resource Aloocation - This means that if a node fails, its resources can be reclaimed and reallocated to other tasks, ensuring efficient resource utilization.
+- Lazy execution in Spark - Lazy evaluation means that Spark doesnt executr transformations as soon as the are defined. Instead it builds a logical execution plan and waits until an action is called. It optimized execution, minimizes data movement and achieves fault tolerance.
   
 
 2. **Spark Planning & Optimization:** Logical vs Physical Planning: Walk through the transition from Logical Plan to Physical Plan; What is the fundamental difference between Rule-Based (RBO) and Cost-Based Optimization (CBO), what are the common kinds of optimizations used? What is the AQE? Why is running ANALYZE TABLE recommended for performant CBO? and what is whole-stage code generation?
