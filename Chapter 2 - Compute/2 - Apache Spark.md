@@ -31,6 +31,12 @@ Think through the following questions; by answering them you’ll touch every ma
     - Task - A unit of work that will be sent to one executor.
     - Job - A parallel computation consisting of multiple tasks.
     - Stage - Each job gets divided into smaller sets of tasks called stages that depend on each other.
+- The difference between a transformation and an action:
+    - transformation - operation on RDDs, DFs or datasets that creates new distributed dataset from an existing one. Creates a logical execution plan. Evaluated lazily, meaning they are not executed until an action is called. The building blocks for constructing the logical flow of data. There are two types of transformation:
+          - Narrow Transformation - one to one, narrow dependencies (map, filter).
+          - Wide Transformation - one to many, wide dependencies, required shuffling and represent a stage boundary in the DAG. (groupByKey, reduceByKey, join)
+  - action - operations that trigger the physical execution plan. Returns value to either the driver program or to external storage system. Operations which initiate computations and produce a result or a side effect. (colect, count, first, saveAsTextFile)
+  
 
 2. **Spark Planning & Optimization:** Logical vs Physical Planning: Walk through the transition from Logical Plan to Physical Plan; What is the fundamental difference between Rule-Based (RBO) and Cost-Based Optimization (CBO), what are the common kinds of optimizations used? What is the AQE? Why is running ANALYZE TABLE recommended for performant CBO? and what is whole-stage code generation?
 
