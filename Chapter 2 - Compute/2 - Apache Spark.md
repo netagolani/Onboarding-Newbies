@@ -80,8 +80,23 @@ Think through the following questions; by answering them you’ll touch every ma
 - What is wrriten in a shuffle? https://medium.com/@sairam94.a/what-i-learned-about-spark-shuffles-after-8-years-of-writing-production-jobs-33d454c92150 great article for that. In shuffle the data is wrriten to disk. For each task there is a shuffle data (contains output for all partitions) and index (byte offsets so reduce tasks can quickly find their data) files.
 
 4. **Tungsten & Resources in Spark:** What is an RDD? Why did Spark move away from RDDs in favor of DataFrames/Datasets? Explain how Tungsten uses off-heap memory to avoid Garbage Collection pauses. Why is it a bad idea to give one executor a lot of resources (the "Fat Executor" problem)? What is the difference between Execution/Storage memory and the overhead memory? What happens when a task exceeds its allotted execution memory?
+- RDD - resilient distributed datasets, resilient - Fault-tolerant and capable of rebuilding data on failure. Distributed - Data distributed among multiple nodes in a cluster. Dataset - A collection of partitioned data with values. The core data structure in spark. Immutable, transformations created new RDDs.
+- reasons to prefer datasets/dataframes over RDDs:
+    - performence - rdd -> no query optimizations, serialization overhead. DF -> Uses Catalyst Optimizer (query optimization) + Tungsten engine (efficient memory/CPU execution).
+    - usage - rdd -> Functional API. Requires more code. DF -> SQL-like API. Easier, more expressive.
+    - API type - RDD -> type errors only at runtime. DF -> Declarative, high-level, closer to SQL. Type-safe.
+- Tungsten engine is the most critical low level optimizations. Before Tungsten, Spark relied heavily on the JVMs object model and GC. Data was stored as Java objects with significant overhead and billions of object meant frequent GC pauses. Tungsten's design from Java object storage to custom binary row format, stored off-heap in contiguous memory regions, reducing JVM overhead.
+- The fat executor problem - can cause garbage collection issues, risk of long GC pauses and task delays, reduce parallelism. When there is more memory the heap is larger and then the GC scan is larger and we have a bottle neck by the GC.
+- Memory management, the on heap memory divided into main sections `spark.executor.memory`:
+    - execution memory - for operations such as shuffles, joins, sorts and aggregations, shorter lived and once an operation is completed, the memory is immediately freed up and made available for the next set of tasks, ensuring efficient use of resources.
+    - storage memory - is used for caching and broadcasting data.
+    - overhead memory - Addition to JVM heap `spark.executor.memoryOverhead` `spark.executor.memoryOverheadFactor` It is used for any tasks that run outside of the JVM’s direct control. Internals operatios.\
+when configuring an executor, the total memory requested is the sum of the JVM memory and the overhead memory.
+- tasks exceeds its allocated execution memory can cause OOM errors, GC Overhead Limit Exceeded, Heap Space Errors. 
 
-5. **Spark Skew, Partitioning & Caching:** What is data skew? how can it be solved? what is the difference between `repartition(n)` and `coalesce(n)`? What are the spark `StorageLevel`s? what is the difference between `cache` and `persist`? why are udf's (expecially in python) bad? how does spark solve the serde bottleneck with udf's?
+5. **Spark Skew, Partitioning & Caching:** What is data skew? how can it be solved? what is the difference between `repartition(n)` and `coalesce(n)`? What are the spark `StorageLevel`s? what is the difference between `cache` and `persist`? why are udf's (expecially in python) bad? how does spark solve the serde bottleneck with udf's?\
+- Data skew - data skew occurs when some partitions have significantly more data than others. This can cause imbalance in memory usage among executors, leading to OOM errors in some executors, can occur in several scenarios like join and groupBy operations or data distribution.
+-  
 
 
 ### Real-World Context
