@@ -55,14 +55,29 @@ Think through the following questions; by answering them you’ll touch every ma
     4. physical plans - from logical plan, the plan is described how it will physicaly executed on the cluster in different kinds of execution strategies.
     5. "Cost Model" - comparing all the physical plans.
     6. selected physical plan - decides the final plan of which partitions should be joined first, type of join, broken down into stages,  divides jobs into tasks and assigns them to executors. Cost-based Optimization (CBO) analyzes data statistics to make informed decisions. Helps join reordering, broadcast selection and aggregation optimizations based on data distribution.
-    7. Code Generation - 
+    7. Code Generation - is a physical query optimization in Spark SQL that fuses multiple physical operators (as a subtree of plans that support code generation) together into a single Java function. Improves the execution performance of a query by collapsing a query tree into a single optimized function that eliminates virtual function calls and leverages CPU registers for intermediate data.
 - AQE - Adaptive Query Execution. New feature in Spark 3.0 which enables plan changes at runtime. It collects statistics during plan execution and if Spark detects better plan during execution, it changes them at runtime. If we want to see these changes it won't be in the explain() function, it will be in the Spark UI.  
 - RBO are based on predefined rules for logical plan while CBO use some statistical properties of data for physical plan.
 - Running ANALAZE TABLE ensures that the statistics are exposed, accurate and up to date in the metastore for CBO.
-- whole-stage code generation - is a physical query optimization in Spark SQL that fuses multiple physical operators (as a subtree of plans that support code generation) together into a single Java function. Improves the execution performance of a query by collapsing a query tree into a single optimized function that eliminates virtual function calls and leverages CPU registers for intermediate data.
 
 
-3. **Spark Shuffle & Joins:** Compare the different kind of joins, and when will spark use each? how can we tell spark to prefer one over the other? what is join reordering? and why is "broadcasting" considered a high-risk, high-reward optimization? What is a _Narrow_ transformation, and _Wide_ transformation? Why do some operations require shuffle? what exactly is written in shuffle?
+3. **Spark Shuffle & Joins:** Compare the different kind of joins, and when will spark use each? how can we tell spark to prefer one over the other? what is join reordering? and why is "broadcasting" considered a high-risk, high-reward optimization? What is a _Narrow_ transformation, and _Wide_ transformation? Why do some operations require shuffle? what exactly is written in shuffle?\
+- Join Types:
+  - Inner Join - returns only the rows where there is a match in both tables.
+  - Left Outer Join - returns all the rows from the left table, along with matching rows from the right table. If there is no match, NULL values are returned for the columns from the right table.
+  - Right Outer join - the opposite.
+  - Full outer join - returns all the rows when there is a match in either the left or right table. It combines the results of both left and right outer joins.
+  - Broadcast Hash join - In broadcast hash join, copy of one of the join relations are being sent to all the worker nodes and it saves shuffling cost. only supported for '=' join. supported for all join types except full outer joins. When the broadcast size is small, it is usually faster than other join strategies. Copy of relation is broadcasted over the network. Therefore, being a network-intensive operation could cause out of memory errors or performance issues when broadcast size is big. You can’t make changes to the broadcasted relation, after broadcast. Even if you do, they won’t be available to the worker nodes(because the copy is already shipped).
+  - Shuffle Hash Join - moving data with the same value of join key in the same executor node followed by Hash Join. it’s an expensive join in a way that involves both shuffling and hashing.
+  - Shuffle sort-merge join - shuffling of data to get the same join_key with the same worker, and then performing sort-merge join operation at the partition level in the worker nodes. The defult join strategy, and the join keys need to be sortable, supported for all join types.
+  - Cartesian Join - of the two relations is calculated to evaluate join.
+  - Broadcast nested loop join - Like nested look. Very slow strategy, the fall back option.
+- We can tell spark to prefer one join via the other with join hints.
+- Join reordering - is an optimization technique performed by the Catalyst optimizer to rearrange the sequence of multiple joins in a query for better performance. It aims to minimize intermediate data sizes, reduce shuffle operations, and lower overall execution costs by selecting an optimal join order. Happens in RBO & CBO (ANALYZE TABLE COMPUTE STATISTICS).
+- "broadcating" considering a high risk because it can cause an OOM errors but a high reward because its the efficient wa[y to join if it fits.
+- I explained the difference of wide and narrow transformations earlier.
+- Operations required shuffle in wide transformations because the transformation cant be done on each partition it has to combine data from the partitions.
+- What is wrriten in a shuffle? https://medium.com/@sairam94.a/what-i-learned-about-spark-shuffles-after-8-years-of-writing-production-jobs-33d454c92150 great article for that. In shuffle the data is wrriten to disk. For each task there is a shuffle data (contains output for all partitions) and index (byte offsets so reduce tasks can quickly find their data) files.
 
 4. **Tungsten & Resources in Spark:** What is an RDD? Why did Spark move away from RDDs in favor of DataFrames/Datasets? Explain how Tungsten uses off-heap memory to avoid Garbage Collection pauses. Why is it a bad idea to give one executor a lot of resources (the "Fat Executor" problem)? What is the difference between Execution/Storage memory and the overhead memory? What happens when a task exceeds its allotted execution memory?
 
