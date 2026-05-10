@@ -48,6 +48,19 @@ Think through the following questions; by answering them you’ll touch every ma
   
 
 2. **Spark Planning & Optimization:** Logical vs Physical Planning: Walk through the transition from Logical Plan to Physical Plan; What is the fundamental difference between Rule-Based (RBO) and Cost-Based Optimization (CBO), what are the common kinds of optimizations used? What is the AQE? Why is running ANALYZE TABLE recommended for performant CBO? and what is whole-stage code generation?
+- The catalist optimizer is a query optimization framework to optimize the execution of data queries. The transition from logical plan to phisical plan:
+    1. unresolved logical plan - gets an SQL query or DF. Output the first version of a logical plan where relation name and columns are not specifically resolved. Validate syntax and code.
+    2. analyzed logical plan - resolve by the catalog (metastore) the unresolved datastructures, schema and types.
+    3. optimized logical plan - reorder the logical plan by rule-based optimizations (RBO), predefined rules to simplify and optimize query plans focusing on query structure. (predicate pushdown, constant folding, projection pruning).
+    4. physical plans - from logical plan, the plan is described how it will physicaly executed on the cluster in different kinds of execution strategies.
+    5. "Cost Model" - comparing all the physical plans.
+    6. selected physical plan - decides the final plan of which partitions should be joined first, type of join, broken down into stages,  divides jobs into tasks and assigns them to executors. Cost-based Optimization (CBO) analyzes data statistics to make informed decisions. Helps join reordering, broadcast selection and aggregation optimizations based on data distribution.
+    7. Code Generation - 
+- AQE - Adaptive Query Execution. New feature in Spark 3.0 which enables plan changes at runtime. It collects statistics during plan execution and if Spark detects better plan during execution, it changes them at runtime. If we want to see these changes it won't be in the explain() function, it will be in the Spark UI.  
+- RBO are based on predefined rules for logical plan while CBO use some statistical properties of data for physical plan.
+- Running ANALAZE TABLE ensures that the statistics are exposed, accurate and up to date in the metastore for CBO.
+- whole-stage code generation - is a physical query optimization in Spark SQL that fuses multiple physical operators (as a subtree of plans that support code generation) together into a single Java function. Improves the execution performance of a query by collapsing a query tree into a single optimized function that eliminates virtual function calls and leverages CPU registers for intermediate data.
+
 
 3. **Spark Shuffle & Joins:** Compare the different kind of joins, and when will spark use each? how can we tell spark to prefer one over the other? what is join reordering? and why is "broadcasting" considered a high-risk, high-reward optimization? What is a _Narrow_ transformation, and _Wide_ transformation? Why do some operations require shuffle? what exactly is written in shuffle?
 
