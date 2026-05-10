@@ -23,7 +23,14 @@ Think through the following questions; by answering them you’ll touch every ma
 
 1. **Spark Architecture & Execution:** what are the main components of spark? what is the role of each component? what are their roles? what is the difference between a transformation and an action? how does spark achieve fault tolerance? what is lazy execution in spark? go over [this](assets/where_do_i_run.py) and for each line, comment where it runs.
 - Main components of spark:
-    - 
+    - Driver Program - The execution coordinator process. Runs the main function. Creates the SparkContext which connects to the cluster manager.
+    - SparkContext - EntryPoint for spark functionality. Represents the spark connection. Creates RDDs. Coordinates the execution of tasks.
+    - Cluster Manager - An external service for managing and allocating resources on the cluster (YARN, K8s, standalone manager) 
+    - Worker Node - Node that runs spark executors.
+    - Executor - A process launched on a worker node. Runs tasks. Keeps data in memory or disk for caching and intermidiate storage. Each application has its own executors Communicates with the cluster manager and the driver program.
+    - Task - A unit of work that will be sent to one executor.
+    - Job - A parallel computation consisting of multiple tasks.
+    - Stage - Each job gets divided into smaller sets of tasks called stages that depend on each other.
 
 2. **Spark Planning & Optimization:** Logical vs Physical Planning: Walk through the transition from Logical Plan to Physical Plan; What is the fundamental difference between Rule-Based (RBO) and Cost-Based Optimization (CBO), what are the common kinds of optimizations used? What is the AQE? Why is running ANALYZE TABLE recommended for performant CBO? and what is whole-stage code generation?
 
