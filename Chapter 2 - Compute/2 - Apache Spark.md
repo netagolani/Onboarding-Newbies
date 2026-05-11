@@ -95,8 +95,31 @@ when configuring an executor, the total memory requested is the sum of the JVM m
 - tasks exceeds its allocated execution memory can cause OOM errors, GC Overhead Limit Exceeded, Heap Space Errors. 
 
 5. **Spark Skew, Partitioning & Caching:** What is data skew? how can it be solved? what is the difference between `repartition(n)` and `coalesce(n)`? What are the spark `StorageLevel`s? what is the difference between `cache` and `persist`? why are udf's (expecially in python) bad? how does spark solve the serde bottleneck with udf's?\
-- Data skew - data skew occurs when some partitions have significantly more data than others. This can cause imbalance in memory usage among executors, leading to OOM errors in some executors, can occur in several scenarios like join and groupBy operations or data distribution.
--  
+- Data skew - data skew occurs when some partitions have significantly more data than others. This can cause imbalance in memory usage among executors, leading to OOM errors in some executors, can occur in several scenarios like join and groupBy operations or data distribution.\
+To handle data skew there are some techniques:
+    - Salting - add random component to the skewed keys to distribute the data more evenly accross partitions and then remove the salt after processing.
+    - Splitting skewed data - Identify the skewed keys and process them separately without affecting the rest of the dataset. Filter out the skewed keys, process them in a separate job, and then combine the results with the rest of the data.
+    - Increasing the number of partitions and then reducing the load on any single partition.
+    - Using reduceByKey instead of groupByKey - reduceByKey performs local aggregation before shuffling the data which reduces the amount of data transferred over the network and helps prevent skewness.
+    - Using Broadcast Variables
+    - Using map-side aggregation
+    - custom partitioning - repartition.
+-  repartition (n) -  transformation is used to either increase or decrease the number of partitions in a DataFrame to N. It always trigger a full shuffle of the data across all executors in the cluster. It causing an even data but is an expensive network and disk I/O operation (resource intensive operation)
+-  coalesce(N) - transformation used to reduce the number of partitions in a dataframe to N. Used to avoid a full shuffle. It attempts to merge existing partitions on the same executor, thereby reducing data movement across the network. Less resource intensive and faster to reducing partitions then repartition(). But can lead to uneven partitions. Its primarily for decreasing partitions. `df.coalesce(N, shuffle=True)` behave like repartition(N) but when `shuffle=False` (the default) its ideal and then you reduce partitions. Used the most for reducing output files.
+-  You use coalesce(N) when you want to write to disk with fewer files and the cost of full shuffle is too high. But when you need the reduce partitions to be as evenly sized the cost of shuffling is justified for data skewthat you want to reslove. https://medium.com/@mohammadshoaib_74869/sparks-repartition-vs-coalesce-a-deep-dive-into-optimizing-data-distribution-22e8ce49b49a
+-  spark storageLevels are for controllig the storage of an RDD. useDisk - Whether drop the RDD to disk if it falls out of memory, useMemory - whether to use memory, deserialized - whether to keep the data in memory in a JAVA-specific serialized format or not, replication - whether to replicate the RDD partitions on multiple nodes. pyspark.StorageLevel(useDisk, useMemory, useOffHeap, deserialized, replication=<N>):
+    - DISK_ONLY = StorageLevel(True, False, False, False, 1). Store partitions only on disk.
+    - DISK_ONLY_2 = StorageLevel(True, False, False, False, 2). Same, but replicated partitions on two nodes. 
+    - DISK_ONLY_3 = StorageLevel.DISK_ONLY_3 = StorageLevel(True, False, False, False, 3)
+    - MEMORY_AND_DISK = StorageLevel.MEMORY_AND_DISK = StorageLevel(True, True, False, False, 1). Spark will store the data in memory as much as possible and spill to disk if necessary.
+    - MEMORY_AND_DISK_2 = StorageLevel.MEMORY_AND_DISK_2 = StorageLevel(True, True, False, False, 2)
+    - MEMORY_AND_DISK_SER - Store partitions as serialized objects in memory, spill to disk if needed.
+    - MEMORY_AND_DISK_DESER = StorageLevel.MEMORY_AND_DISK_DESER = StorageLevel(True, True, False, True, 1)
+    - MEMORY_ONLY = StorageLevel.MEMORY_ONLY = StorageLevel(False, True, False, False, 1)
+    - MEMORY_ONLY_2 = StorageLevel.MEMORY_ONLY_2 = StorageLevel(False, True, False, False, 2)
+    - OFF_HEAP = StorageLevel.OFF_HEAP = StorageLevel(True, True, True, False, 1)
+- cache() - By caching the dataset, you can perform different analyses without recomputing the data each time, significantly speeding up your workflow. cache() is equivalent to calling persist() without any parameters. This default storage level is ‘MEMORY_AND_DISK’.
+- persist(storageLevel) - allows you to specify how the data should be stored, providing control over the storage.
 
 
 ### Real-World Context
