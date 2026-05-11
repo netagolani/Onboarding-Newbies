@@ -120,6 +120,8 @@ To handle data skew there are some techniques:
     - OFF_HEAP = StorageLevel.OFF_HEAP = StorageLevel(True, True, True, False, 1)
 - cache() - By caching the dataset, you can perform different analyses without recomputing the data each time, significantly speeding up your workflow. cache() is equivalent to calling persist() without any parameters. This default storage level is ‘MEMORY_AND_DISK’.
 - persist(storageLevel) - allows you to specify how the data should be stored, providing control over the storage.
+- udf's in python are bad because the movement of data between the JVM and Python processes, along with the serialization and deserialization, is the root cause of the slow behavior of Python UDFs in Spark.
+- spark solves the serde bottleneck with udf's - implements UDFs in Scala or Java because they run directly on the JVM. Or use apache arrow-based UDFs (a language-agnostic in-memory data format to efficiently transfer data between JVM and Python processes.
 
 
 ### Real-World Context
