@@ -123,7 +123,22 @@ To handle data skew there are some techniques:
 - udf's in python are bad because the movement of data between the JVM and Python processes, along with the serialization and deserialization, is the root cause of the slow behavior of Python UDFs in Spark.
 - spark solves the serde bottleneck with udf's - implements UDFs in Scala or Java because they run directly on the JVM. Or use apache arrow-based UDFs (a language-agnostic in-memory data format to efficiently transfer data between JVM and Python processes.
 
-
+### Q&A First Session
+1. Spark vs Trino
+- SQL - Trino has a pure SQL approach makes it easier to write and understand queries. SparkSQL might require some programming for advanced tasks.
+- Big data batch processing - spark's capabilities can handle data volumes that might overwhelm Trino.
+- Spark's is a multi-purpose workhouse, allowing you to build ML pipelines within the same framework. Trino focuses purely on quering.
+- Staged Execution - spark executes queries in stages. While Trino's pipelined execution provides a more immediate response.
+- Resource overhead - trino is more lightweight design, spark can be more resource intensive.
+- Columnar processing - Spark can also work with columnar formats, but Trino’s architecture is specifically optimized for them.
+2. Three usecases of spark - spark streaming, machine learning, batch processing.
+3. What is RDD - [elements]
+4. When spark can reorder the repartition
+5. Does repartition is the amount of partition that will be in the execution?
+6. Dataset vs Dataframe
+- Dataframe - higher-level abstraction, introduced in Spark 1.3. Present the RDD in a tabular format. Optimized using the Catalyst optimizer. Less type safety than datasets. (available in Java, Scala, Python).
+- Dataset - introduced in Spark 1.6 an extension of Dataframes. Combine the performance optimization of DataFrames with the type safety and object-oriented programming benefits of RDDs. (available in Java, Scala).
+7. serialize in storage levels meaning that before it stored it serialized to byte array.
 ### Real-World Context
 Rather than focusing on one technology, think about how these ideas show up in distributed processing frameworks, how they are used by other procerssing frameworks and what are the core concepts of processing.
 
