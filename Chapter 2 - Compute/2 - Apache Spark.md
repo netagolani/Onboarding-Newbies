@@ -139,6 +139,10 @@ To handle data skew there are some techniques:
 - Dataframe - higher-level abstraction, introduced in Spark 1.3. Present the RDD in a tabular format. Optimized using the Catalyst optimizer. Less type safety than datasets. (available in Java, Scala, Python).
 - Dataset - introduced in Spark 1.6 an extension of Dataframes. Combine the performance optimization of DataFrames with the type safety and object-oriented programming benefits of RDDs. (available in Java, Scala).
 7. serialize in storage levels meaning that before it stored it serialized to byte array.
+8. spark-submit - Spark Submit is a command-line tool that comes with Apache Spark which allows users to submit their spark applications to a cluster for execution. Allow users to specify various configration parametes (driver memory, executor memory & cores), with different modes (--deploy-mode=client-mode, cluster-mode). 
+9. How to deploy spark vanilla - with spark submit.
+
+
 ### Real-World Context
 Rather than focusing on one technology, think about how these ideas show up in distributed processing frameworks, how they are used by other procerssing frameworks and what are the core concepts of processing.
 
