@@ -6,7 +6,7 @@ from pyspark.sql.functions import avg, col, udf
 spark = SparkSession.builder.appName("ComplexLogic").getOrCreate()
 lookup_table = {"A": 1.1, "B": 1.2, "C": 1.3}
 
-# Evaluated lazily transformation in the driver program
+# createDataFrame is an action, therefore its on the worker nodes
 raw_df = spark.read.parquet("s3://data/events/")
 meta_df = spark.createDataFrame([("A", "Premium"), ("B", "Standard")], ["code", "type"])
 
