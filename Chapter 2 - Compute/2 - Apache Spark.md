@@ -133,8 +133,8 @@ To handle data skew there are some techniques:
 - Columnar processing - Spark can also work with columnar formats, but Trino’s architecture is specifically optimized for them.
 2. Three usecases of spark - spark streaming, machine learning, batch processing.
 3. What is RDD - [elements]
-4. When spark can reorder the repartition
-5. Does repartition is the amount of partition that will be in the execution?
+4. Does spark can reorder the repartition? yes.
+5. Does repartition is the amount of partition that will be in the execution? No, is the amount of partition that will be in the same operation (transformation/action) after that it can be repartition again.
 6. Dataset vs Dataframe
 - Dataframe - higher-level abstraction, introduced in Spark 1.3. Present the RDD in a tabular format. Optimized using the Catalyst optimizer. Less type safety than datasets. (available in Java, Scala, Python).
 - Dataset - introduced in Spark 1.6 an extension of Dataframes. Combine the performance optimization of DataFrames with the type safety and object-oriented programming benefits of RDDs. (available in Java, Scala).
