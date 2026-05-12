@@ -132,7 +132,7 @@ To handle data skew there are some techniques:
 - Resource overhead - trino is more lightweight design, spark can be more resource intensive.
 - Columnar processing - Spark can also work with columnar formats, but Trino’s architecture is specifically optimized for them.
 2. Three usecases of spark - spark streaming, machine learning, batch processing.
-3. What is RDD - [elements]
+3. What is RDD - [Row]
 4. Does spark can reorder the repartition? yes.
 5. Does repartition is the amount of partition that will be in the execution? No, is the amount of partition that will be in the same operation (transformation/action) after that it can be repartition again.
 6. Dataset vs Dataframe
