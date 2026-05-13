@@ -22,14 +22,125 @@ This section will go over the fundamentals of _apache spark_.
 Think through the following questions; by answering them you’ll touch every major topic listed above:
 
 1. **Spark Architecture & Execution:** what are the main components of spark? what is the role of each component? what are their roles? what is the difference between a transformation and an action? how does spark achieve fault tolerance? what is lazy execution in spark? go over [this](assets/where_do_i_run.py) and for each line, comment where it runs.
+- Main components of spark:
+    - Driver Program - The execution coordinator process. Runs the main function. Creates the SparkContext which connects to the cluster manager.
+    - SparkContext - EntryPoint for spark functionality. Represents the spark connection. Creates RDDs. Coordinates the execution of tasks.
+    - Cluster Manager - An external service for managing and allocating resources on the cluster (YARN, K8s, standalone manager) 
+    - Worker Node - Node that runs spark executors.
+    - Executor - A process launched on a worker node. Runs tasks. Keeps data in memory or disk for caching and intermidiate storage. Each application has its own executors Communicates with the cluster manager and the driver program.
+    - Task - A unit of work that will be sent to one executor.
+    - Job - A parallel computation consisting of multiple tasks.
+    - Stage - Each job gets divided into smaller sets of tasks called stages that depend on each other.
+- The difference between a transformation and an action:
+    - transformation - operation on RDDs, DFs or datasets that creates new distributed dataset from an existing one. Creates a logical execution plan. Evaluated lazily, meaning they are not executed until an action is called. The building blocks for constructing the logical flow of data. There are two types of transformation:
+          - Narrow Transformation - one to one, narrow dependencies (map, filter).
+          - Wide Transformation - one to many, wide dependencies, required shuffling and represent a stage boundary in the DAG. (groupByKey, reduceByKey, join)
+  - action - operations that trigger the physical execution plan. Returns value to either the driver program or to external storage system. Operations which initiate computations and produce a result or a side effect. (colect, count, first, saveAsTextFile).
+- Fault tolerance in Apache Spark -
+    - Lineage Information - Is a DAG that represents the sequence of transformations applied to an RDD. Lineage information serves as a recipe or set of instructions to recompute lost or corrupted data partitions in case of node failures. It provides a clear history of how an RDD was derived from its source data, allowing Spark to re-execute the transformations that led to its creation.
+    - Data Replication - for RDDs. By default, data is replicated at least once across different nodes, reducing the risk of data lose due to node failures.
+    - Checkpointing - save the state of an RDD to a storage system like HDFS. Fast recovery instead of recomputong the entire lineage.
+    - Task Re-execution - In case of node failure, Spark can reschedule the failed tasks on other available nodes. The data needed for those tasks is recomputed using the lineage information.
+    - Pesistent Storage - Spark stores intermidiate results as a persisted data in case of node failures instead of recomputing it.
+    - Driver Recovery - If the driver node fails, the driver’s state can be recovered by restarting the application and re-executing the driver code.
+    - Dynamic Resource Aloocation - This means that if a node fails, its resources can be reclaimed and reallocated to other tasks, ensuring efficient resource utilization.
+- Lazy execution in Spark - Lazy evaluation means that Spark doesnt executr transformations as soon as the are defined. Instead it builds a logical execution plan and waits until an action is called. It optimized execution, minimizes data movement and achieves fault tolerance.
+  
 
 2. **Spark Planning & Optimization:** Logical vs Physical Planning: Walk through the transition from Logical Plan to Physical Plan; What is the fundamental difference between Rule-Based (RBO) and Cost-Based Optimization (CBO), what are the common kinds of optimizations used? What is the AQE? Why is running ANALYZE TABLE recommended for performant CBO? and what is whole-stage code generation?
+- The catalist optimizer is a query optimization framework to optimize the execution of data queries. The transition from logical plan to phisical plan:
+    1. unresolved logical plan - gets an SQL query or DF. Output the first version of a logical plan where relation name and columns are not specifically resolved. Validate syntax and code.
+    2. analyzed logical plan - resolve by the catalog (metastore) the unresolved datastructures, schema and types.
+    3. optimized logical plan - reorder the logical plan by rule-based optimizations (RBO), predefined rules to simplify and optimize query plans focusing on query structure. (predicate pushdown, constant folding, projection pruning).
+    4. physical plans - from logical plan, the plan is described how it will physicaly executed on the cluster in different kinds of execution strategies.
+    5. "Cost Model" - comparing all the physical plans.
+    6. selected physical plan - decides the final plan of which partitions should be joined first, type of join, broken down into stages,  divides jobs into tasks and assigns them to executors. Cost-based Optimization (CBO) analyzes data statistics to make informed decisions. Helps join reordering, broadcast selection and aggregation optimizations based on data distribution.
+    7. Code Generation - is a physical query optimization in Spark SQL that fuses multiple physical operators (as a subtree of plans that support code generation) together into a single Java function. Improves the execution performance of a query by collapsing a query tree into a single optimized function that eliminates virtual function calls and leverages CPU registers for intermediate data.
+- AQE - Adaptive Query Execution. New feature in Spark 3.0 which enables plan changes at runtime. It collects statistics during plan execution and if Spark detects better plan during execution, it changes them at runtime. If we want to see these changes it won't be in the explain() function, it will be in the Spark UI.  
+- RBO are based on predefined rules for logical plan while CBO use some statistical properties of data for physical plan.
+- Running ANALAZE TABLE ensures that the statistics are exposed, accurate and up to date in the metastore for CBO.
 
-3. **Spark Shuffle & Joins:** Compare the different kind of joins, and when will spark use each? how can we tell spark to prefer one over the other? what is join reordering? and why is "broadcasting" considered a high-risk, high-reward optimization? What is a _Narrow_ transformation, and _Wide_ transformation? Why do some operations require shuffle? what exactly is written in shuffle?
+
+3. **Spark Shuffle & Joins:** Compare the different kind of joins, and when will spark use each? how can we tell spark to prefer one over the other? what is join reordering? and why is "broadcasting" considered a high-risk, high-reward optimization? What is a _Narrow_ transformation, and _Wide_ transformation? Why do some operations require shuffle? what exactly is written in shuffle?\
+- Join Types:
+  - Inner Join - returns only the rows where there is a match in both tables.
+  - Left Outer Join - returns all the rows from the left table, along with matching rows from the right table. If there is no match, NULL values are returned for the columns from the right table.
+  - Right Outer join - the opposite.
+  - Full outer join - returns all the rows when there is a match in either the left or right table. It combines the results of both left and right outer joins.
+  - Broadcast Hash join - In broadcast hash join, copy of one of the join relations are being sent to all the worker nodes and it saves shuffling cost. only supported for '=' join. supported for all join types except full outer joins. When the broadcast size is small, it is usually faster than other join strategies. Copy of relation is broadcasted over the network. Therefore, being a network-intensive operation could cause out of memory errors or performance issues when broadcast size is big. You can’t make changes to the broadcasted relation, after broadcast. Even if you do, they won’t be available to the worker nodes(because the copy is already shipped).
+  - Shuffle Hash Join - moving data with the same value of join key in the same executor node followed by Hash Join. it’s an expensive join in a way that involves both shuffling and hashing.
+  - Shuffle sort-merge join - shuffling of data to get the same join_key with the same worker, and then performing sort-merge join operation at the partition level in the worker nodes. The defult join strategy, and the join keys need to be sortable, supported for all join types.
+  - Cartesian Join - of the two relations is calculated to evaluate join.
+  - Broadcast nested loop join - Like nested look. Very slow strategy, the fall back option.
+- We can tell spark to prefer one join via the other with join hints.
+- Join reordering - is an optimization technique performed by the Catalyst optimizer to rearrange the sequence of multiple joins in a query for better performance. It aims to minimize intermediate data sizes, reduce shuffle operations, and lower overall execution costs by selecting an optimal join order. Happens in RBO & CBO (ANALYZE TABLE COMPUTE STATISTICS).
+- "broadcating" considering a high risk because it can cause an OOM errors but a high reward because its the efficient wa[y to join if it fits.
+- I explained the difference of wide and narrow transformations earlier.
+- Operations required shuffle in wide transformations because the transformation cant be done on each partition it has to combine data from the partitions.
+- What is wrriten in a shuffle? https://medium.com/@sairam94.a/what-i-learned-about-spark-shuffles-after-8-years-of-writing-production-jobs-33d454c92150 great article for that. In shuffle the data is wrriten to disk. For each task there is a shuffle data (contains output for all partitions) and index (byte offsets so reduce tasks can quickly find their data) files.
 
 4. **Tungsten & Resources in Spark:** What is an RDD? Why did Spark move away from RDDs in favor of DataFrames/Datasets? Explain how Tungsten uses off-heap memory to avoid Garbage Collection pauses. Why is it a bad idea to give one executor a lot of resources (the "Fat Executor" problem)? What is the difference between Execution/Storage memory and the overhead memory? What happens when a task exceeds its allotted execution memory?
+- RDD - resilient distributed datasets, resilient - Fault-tolerant and capable of rebuilding data on failure. Distributed - Data distributed among multiple nodes in a cluster. Dataset - A collection of partitioned data with values. The core data structure in spark. Immutable, transformations created new RDDs.
+- reasons to prefer datasets/dataframes over RDDs:
+    - performence - rdd -> no query optimizations, serialization overhead. DF -> Uses Catalyst Optimizer (query optimization) + Tungsten engine (efficient memory/CPU execution).
+    - usage - rdd -> Functional API. Requires more code. DF -> SQL-like API. Easier, more expressive.
+    - API type - RDD -> type errors only at runtime. DF -> Declarative, high-level, closer to SQL. Type-safe.
+- Tungsten engine is the most critical low level optimizations. Before Tungsten, Spark relied heavily on the JVMs object model and GC. Data was stored as Java objects with significant overhead and billions of object meant frequent GC pauses. Tungsten's design from Java object storage to custom binary row format, stored off-heap in contiguous memory regions, reducing JVM overhead.
+- The fat executor problem - can cause garbage collection issues, risk of long GC pauses and task delays, reduce parallelism. When there is more memory the heap is larger and then the GC scan is larger and we have a bottle neck by the GC.
+- Memory management, the on heap memory divided into main sections `spark.executor.memory`:
+    - execution memory - for operations such as shuffles, joins, sorts and aggregations, shorter lived and once an operation is completed, the memory is immediately freed up and made available for the next set of tasks, ensuring efficient use of resources.
+    - storage memory - is used for caching and broadcasting data.
+    - overhead memory - Addition to JVM heap `spark.executor.memoryOverhead` `spark.executor.memoryOverheadFactor` It is used for any tasks that run outside of the JVM’s direct control. Internals operatios.\
+when configuring an executor, the total memory requested is the sum of the JVM memory and the overhead memory.
+- tasks exceeds its allocated execution memory can cause OOM errors, GC Overhead Limit Exceeded, Heap Space Errors. 
 
-5. **Spark Skew, Partitioning & Caching:** What is data skew? how can it be solved? what is the difference between `repartition(n)` and `coalesce(n)`? What are the spark `StorageLevel`s? what is the difference between `cache` and `persist`? why are udf's (expecially in python) bad? how does spark solve the serde bottleneck with udf's?
+5. **Spark Skew, Partitioning & Caching:** What is data skew? how can it be solved? what is the difference between `repartition(n)` and `coalesce(n)`? What are the spark `StorageLevel`s? what is the difference between `cache` and `persist`? why are udf's (expecially in python) bad? how does spark solve the serde bottleneck with udf's?\
+- Data skew - data skew occurs when some partitions have significantly more data than others. This can cause imbalance in memory usage among executors, leading to OOM errors in some executors, can occur in several scenarios like join and groupBy operations or data distribution.\
+To handle data skew there are some techniques:
+    - Salting - add random component to the skewed keys to distribute the data more evenly accross partitions and then remove the salt after processing.
+    - Splitting skewed data - Identify the skewed keys and process them separately without affecting the rest of the dataset. Filter out the skewed keys, process them in a separate job, and then combine the results with the rest of the data.
+    - Increasing the number of partitions and then reducing the load on any single partition.
+    - Using reduceByKey instead of groupByKey - reduceByKey performs local aggregation before shuffling the data which reduces the amount of data transferred over the network and helps prevent skewness.
+    - Using Broadcast Variables
+    - Using map-side aggregation
+    - custom partitioning - repartition.
+-  repartition (n) -  transformation is used to either increase or decrease the number of partitions in a DataFrame to N. It always trigger a full shuffle of the data across all executors in the cluster. It causing an even data but is an expensive network and disk I/O operation (resource intensive operation)
+-  coalesce(N) - transformation used to reduce the number of partitions in a dataframe to N. Used to avoid a full shuffle. It attempts to merge existing partitions on the same executor, thereby reducing data movement across the network. Less resource intensive and faster to reducing partitions then repartition(). But can lead to uneven partitions. Its primarily for decreasing partitions. `df.coalesce(N, shuffle=True)` behave like repartition(N) but when `shuffle=False` (the default) its ideal and then you reduce partitions. Used the most for reducing output files.
+-  You use coalesce(N) when you want to write to disk with fewer files and the cost of full shuffle is too high. But when you need the reduce partitions to be as evenly sized the cost of shuffling is justified for data skewthat you want to reslove. https://medium.com/@mohammadshoaib_74869/sparks-repartition-vs-coalesce-a-deep-dive-into-optimizing-data-distribution-22e8ce49b49a
+-  spark storageLevels are for controllig the storage of an RDD. useDisk - Whether drop the RDD to disk if it falls out of memory, useMemory - whether to use memory, deserialized - whether to keep the data in memory in a JAVA-specific serialized format or not, replication - whether to replicate the RDD partitions on multiple nodes. pyspark.StorageLevel(useDisk, useMemory, useOffHeap, deserialized, replication=<N>):
+    - DISK_ONLY = StorageLevel(True, False, False, False, 1). Store partitions only on disk.
+    - DISK_ONLY_2 = StorageLevel(True, False, False, False, 2). Same, but replicated partitions on two nodes. 
+    - DISK_ONLY_3 = StorageLevel.DISK_ONLY_3 = StorageLevel(True, False, False, False, 3)
+    - MEMORY_AND_DISK = StorageLevel.MEMORY_AND_DISK = StorageLevel(True, True, False, False, 1). Spark will store the data in memory as much as possible and spill to disk if necessary.
+    - MEMORY_AND_DISK_2 = StorageLevel.MEMORY_AND_DISK_2 = StorageLevel(True, True, False, False, 2)
+    - MEMORY_AND_DISK_SER - Store partitions as serialized objects in memory, spill to disk if needed.
+    - MEMORY_AND_DISK_DESER = StorageLevel.MEMORY_AND_DISK_DESER = StorageLevel(True, True, False, True, 1)
+    - MEMORY_ONLY = StorageLevel.MEMORY_ONLY = StorageLevel(False, True, False, False, 1)
+    - MEMORY_ONLY_2 = StorageLevel.MEMORY_ONLY_2 = StorageLevel(False, True, False, False, 2)
+    - OFF_HEAP = StorageLevel.OFF_HEAP = StorageLevel(True, True, True, False, 1)
+- cache() - By caching the dataset, you can perform different analyses without recomputing the data each time, significantly speeding up your workflow. cache() is equivalent to calling persist() without any parameters. This default storage level is ‘MEMORY_AND_DISK’.
+- persist(storageLevel) - allows you to specify how the data should be stored, providing control over the storage.
+- udf's in python are bad because the movement of data between the JVM and Python processes, along with the serialization and deserialization, is the root cause of the slow behavior of Python UDFs in Spark.
+- spark solves the serde bottleneck with udf's - implements UDFs in Scala or Java because they run directly on the JVM. Or use apache arrow-based UDFs (a language-agnostic in-memory data format to efficiently transfer data between JVM and Python processes.
+
+### Q&A First Session
+1. Spark vs Trino
+- SQL - Trino has a pure SQL approach makes it easier to write and understand queries. SparkSQL might require some programming for advanced tasks.
+- Big data batch processing - spark's capabilities can handle data volumes that might overwhelm Trino.
+- Spark's is a multi-purpose workhouse, allowing you to build ML pipelines within the same framework. Trino focuses purely on quering.
+- Staged Execution - spark executes queries in stages. While Trino's pipelined execution provides a more immediate response.
+- Resource overhead - trino is more lightweight design, spark can be more resource intensive.
+- Columnar processing - Spark can also work with columnar formats, but Trino’s architecture is specifically optimized for them.
+2. Three usecases of spark - spark streaming, machine learning, batch processing.
+3. What is RDD - [Row]
+4. Does spark can reorder the repartition? yes.
+5. Does repartition is the amount of partition that will be in the execution? No, is the amount of partition that will be in the same operation (transformation/action) after that it can be repartition again.
+6. Dataset vs Dataframe
+- Dataframe - higher-level abstraction, introduced in Spark 1.3. Present the RDD in a tabular format. Optimized using the Catalyst optimizer. Less type safety than datasets. (available in Java, Scala, Python).
+- Dataset - introduced in Spark 1.6 an extension of Dataframes. Combine the performance optimization of DataFrames with the type safety and object-oriented programming benefits of RDDs. (available in Java, Scala).
+7. serialize in storage levels meaning that before it stored it serialized to byte array.
+8. spark-submit - Spark Submit is a command-line tool that comes with Apache Spark which allows users to submit their spark applications to a cluster for execution. Allow users to specify various configration parametes (driver memory, executor memory & cores), with different modes (--deploy-mode=client-mode, cluster-mode). 
+9. How to deploy spark vanilla - with spark submit.
 
 
 ### Real-World Context
