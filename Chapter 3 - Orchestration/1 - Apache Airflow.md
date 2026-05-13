@@ -16,13 +16,26 @@ This section will go over the fundamentals of _Apache Airflow_, consisting of th
 - Be prepared to describe how concepts relate to one another and to real-world scenarios.
 - When in doubt about what you need to learn, ask your mentor.
 
+### Notes
+- workflow - work floowing from one stage to the next.
+- jinja - template engine. Use jinja2 for python3, jinja is deprecated. The template separates the structure from its input data, which means that can reuse the same structure without restarting from scratch. Used in python projects (Flask, Django, Ansible).
+- dag - model which wraps everything needed to execute a workflow. Dag is how Airflow represents a workflow.
+- sdk - software development kit, collection of downloadable tools. A package.
+- operator - a template for a predefined task. (BashOperator, PythonOperator.
+- @task decorator is recommended over the classic PythonOperator.
 ### Core Concepts
 
 Think through the following questions; by answering them you’ll touch every major topic listed above:
 
 
 1. **Airflow User API & Concepts:** Explain the difference between a DAG and a DagRun? How do tasks share small metadata versus global configuration? What is Jinja Templating, and why would you use {{ ds }} instead of Python's datetime.now()? Contrast the TaskFlow SDK with Classic Operators. How does the TaskFlow SDK handle XComs differently than the old xcom_pull method? What are Assets? What types of Operators exist? Why is it not recommended to run any time consuming code in top level dag code? How does this affect the DAG Processor's performance? What is a Hook? what is the connection between Hooks, Connections and Operators?
-
+- Dag vd GagRun
+    - Dag - model which wraps everything needed to execute a workflow. Dag is how Airflow represents a workflow.
+    - DagRun - an instance of a Dag. You can have many runs of a Dag at a time. When a Dagrun is created all tasks inside it are executed. DagRun statueses can be `success`, `failed`, `skipped`, according to it's tasks.
+- task sharing small metadata vs global configuration -
+    - small metadata -
+    - global configuration - 
+ 
 2. **Airflow Backend & Architecture:** What are the different components in the airflow architecture? Define the roles of each component. Why is the Executor considered a mechanism/logic rather than a standalone service? Explain the Deferrable Operator. Which component makes these possible, and how do they save money/resources in a Big Data stack? What are Airflow Providers?
 
 3. **Airflow Workflow Synchronization:** How were DAGs typically synchronized to the Scheduler and Workers in Airflow 2? What where the risks with the approach? How was this solved in Airfloe 3? How did it solve the main issue with the Airflow 2 approach? What are the other advantages DagBundles give us?
