@@ -45,6 +45,28 @@ Think through the following questions; by answering them you’ll touch every ma
 - Connection between hooks, connections and operator - hooks integrate with Connection to gather credentials and hooks also often the building blocks that operatora are built out of.
  
 2. **Airflow Backend & Architecture:** What are the different components in the airflow architecture? Define the roles of each component. Why is the Executor considered a mechanism/logic rather than a standalone service? Explain the Deferrable Operator. Which component makes these possible, and how do they save money/resources in a Big Data stack? What are Airflow Providers?
+- Airflow Architecture -
+    - scheduler - responsible of triggering scheduled workflows and submitting Tasks to the executir to run.
+    - Dag processor - parses Dag files and serializes them into the metadata database.
+    - sensors - special type of opertor that are desighned to do exactly one thing - wait for something to occur.
+    - Web server - ui th trigger debug and inspect the behaviour of Dags and Tasks.
+    - /Dags - folder that is read by the scheduler to figure out what tasks to run and when.
+    - metadata database - Postgresql or mySql, stores state of tasks, dags and variables, xcom data.
+    - worker - which executrs the tasks giver by the scheduler.
+         - CeleryExecutor - a task queue, The Celery Executor distributes the workload from the main application onto multiple celery workers with the help of a message broker such as RabbitMQ or Redis.
+         - KubernetesExecutor - The Celery Executor distributes the workload from the main application onto multiple celery workers with the help of a message broker such as RabbitMQ or Redis.
+         - LocalExecutor - Airflow tasks run locally within the scheduler process. (easy to use but limited in capabilities).
+    - triggerer - executes deferred tasks in an asyncio event loop. If there are no deferred tasks this is not necessary.
+    - plugins - extand airflow's functionality, a set of tools to parse Hive logs and expose Hive metadata.
+- Executor considered a mechanism/logic rather than a standalone service because it can run in multipule variations, locall and remote, parallel and sequential.
+- Deferrable operator - to improve resource utilization and not use sensors which locking the resources instead of other operators running, an operator can suspent itself and free up the worker for other processes. When operator defers, execution moves to the triggerer and the trigger specified by the operator will run.
+- Which component makes these possible? by the triggerer.
+    - A task instance (running operator) reaches a point where it has to wait for other operations or conditions, and defers itself with a trigger tied to an event to resume it.
+    - The new trigger instance is registered by Airflow, and picked up by a triggerer process.
+    - The trigger runs until it fires, at which point its source task is re-scheduled by the scheduler.
+    - The scheduler queues the task to resume on a worker node.
+- How do they save money/resources in a Big Data stack? dynamic allocation
+- What are Airflow Providers? the capabilities of Airflow can be extended by installing additional packages, called providers. They can contain operators, hooks, sensor and transfer operators to communicate with a multitude of external systems or extend Airflow core with new capabilities.
 
 3. **Airflow Workflow Synchronization:** How were DAGs typically synchronized to the Scheduler and Workers in Airflow 2? What where the risks with the approach? How was this solved in Airflow 3? How did it solve the main issue with the Airflow 2 approach? What are the other advantages DagBundles give us?
 
