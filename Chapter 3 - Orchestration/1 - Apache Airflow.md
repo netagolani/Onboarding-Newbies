@@ -72,10 +72,18 @@ Think through the following questions; by answering them you’ll touch every ma
 - In Airflow 2 Airflow loads DAGs from Python source files, which it looks for inside its configured /dags folder. It will take each file, execute it, and then load any DAG objects from that file. The Dags were required to be in one place on the local disk, and getting the Dags there was solely the responsibility of the deplyment manager. In contrast to airflow 3 which provide more flexible options with Dag bundles - a collection of one or more Dags (files along with thier associated files. There can be multipule types of Dag Bundles. `LocalDagBundle` reference a local directory containing Dag files, `GitDagBundle` allowing Airflow to fetch Dags directly from the repository and supports versioning. `S3DagBundle` reference an S3 bucket containing Dag files, dont support versioning and `GCSDagBundle`bucket containing Dag files.
 
 4. **Airflow Task Lifecycle:** What is the full flow of a dag from being written to being run? What happens when the DAG Processor encounters your file? How is Jinja parsing different in dag processing than execution time? At which state does the Scheduler stop managing the task and hand it over to the Executor? What is the flow when a task gets to a worker? when does it become running?
-- 
+- Parsing - the scheduler parses the DAG from the /dags folder and identified the task.
+- Scheduling - the scheduler obsevs that all upstream dependencies for this task are complete. It then creates a queued  entry for the task instance in the metadata database.
+- Dispatch - The executor checks the database for queued tasks. (In a celery based setup, it publishes a message containing the tasks information to the message queue.
+- Execution - worker processes task.
+- State update - the worker updates the task state in the metadata database (running, success, failed, skipped
+- I explained the jijna parsing earlier.
 
 5. **Airflow Critical Sections:** What is the "Critical Section" of the Scheduler? Describe the three primary "loops" or critical sections (DagRun Creation, Task Instance Creation, Task Scheduling).
 - Critical Section - is where TaskInstances go from scheduled state and are enqueued to the executor, whilst ensuring the various concurrency and pool limits are respected. The critical section is obtained by asking for a row-level write lock on every row of the Pool table.
+- DagRun creation - 
+- Task Instance Creation - 
+- Task Scheduling - 
 
 ### Q&A Questions
 
@@ -90,8 +98,10 @@ Think through the following questions; by answering them you’ll touch every ma
 - Connections - Named configuration that stores credentials and endpoint information to the external system (instead of hard-coding passwords or tokens in our DAG). Connections can be reuse.
 - Hooks - Interface. An abstraction to how we access the external system. How we interact with this connection, retrieve the credentials from the Airflow connection object.
 - Operators - abstraction of the task. When we create operator, we can use the hook as part of the functionality of the operator. For example, we have a MyDatabaseOperator that when it used we connect to the database with the hook which needs the connection as a parameter.
-6. FileProcessor
-7. Backfill
+6. FileProcessor - 
+7. Backfill vs Catchup, designed to handle past DAG runs:
+- Backfill - manually triggering DAG runs for a specific past date range. `airflow dags backfill -s <START_DATE> -e <END_DATE> <DAG_NAME>`. Allows you to skip tasks that have already succeeded and rerunning those that need attention.
+- Catchup - automatically schedules DAG runs for all previous, unexecuted intervals when a DAG is first deployed or if it has been paused for a while. Used for ensuring continuity or don't miss any data in batch processing. 
 
 ### Real-World Context
 Rather than focusing on one technology, think about how data workflows are shceduled, and think about when running and ocrhestrating data workflows.
