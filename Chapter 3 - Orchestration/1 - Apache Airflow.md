@@ -69,10 +69,29 @@ Think through the following questions; by answering them you’ll touch every ma
 - What are Airflow Providers? the capabilities of Airflow can be extended by installing additional packages, called providers. They can contain operators, hooks, sensor and transfer operators to communicate with a multitude of external systems or extend Airflow core with new capabilities.
 
 3. **Airflow Workflow Synchronization:** How were DAGs typically synchronized to the Scheduler and Workers in Airflow 2? What where the risks with the approach? How was this solved in Airflow 3? How did it solve the main issue with the Airflow 2 approach? What are the other advantages DagBundles give us?
+- In Airflow 2 Airflow loads DAGs from Python source files, which it looks for inside its configured /dags folder. It will take each file, execute it, and then load any DAG objects from that file. The Dags were required to be in one place on the local disk, and getting the Dags there was solely the responsibility of the deplyment manager. In contrast to airflow 3 which provide more flexible options with Dag bundles - a collection of one or more Dags (files along with thier associated files. There can be multipule types of Dag Bundles. `LocalDagBundle` reference a local directory containing Dag files, `GitDagBundle` allowing Airflow to fetch Dags directly from the repository and supports versioning. `S3DagBundle` reference an S3 bucket containing Dag files, dont support versioning and `GCSDagBundle`bucket containing Dag files.
 
 4. **Airflow Task Lifecycle:** What is the full flow of a dag from being written to being run? What happens when the DAG Processor encounters your file? How is Jinja parsing different in dag processing than execution time? At which state does the Scheduler stop managing the task and hand it over to the Executor? What is the flow when a task gets to a worker? when does it become running?
+- 
 
 5. **Airflow Critical Sections:** What is the "Critical Section" of the Scheduler? Describe the three primary "loops" or critical sections (DagRun Creation, Task Instance Creation, Task Scheduling).
+- Critical Section - is where TaskInstances go from scheduled state and are enqueued to the executor, whilst ensuring the various concurrency and pool limits are respected. The critical section is obtained by asking for a row-level write lock on every row of the Pool table.
+
+### Q&A Questions
+
+1. What defines an asset? a URI which formatted as a string and provide the unique name for it, Thats how I know two assets refers to the same thing.
+2. assets terms -
+- Dags can be scheduled based on asset events created for one or more assets.
+- inlets - task parameter. contains the list of assets a specific task has access to.
+- outlets - task parameter. contains the list of assets a specific task produces updates to.
+3. Operator types: sensor, emptyOperator, taskSDK operator, deffered operator.
+4. Callback - component of logging and monitoring. Yo may want to invoke a callback when your Dag succeeds or fails.
+5. Connections, Operators and Hooks (used to access an external systems)
+- Connections - Named configuration that stores credentials and endpoint information to the external system (instead of hard-coding passwords or tokens in our DAG). Connections can be reuse.
+- Hooks - Interface. An abstraction to how we access the external system. How we interact with this connection, retrieve the credentials from the Airflow connection object.
+- Operators - abstraction of the task. When we create operator, we can use the hook as part of the functionality of the operator. For example, we have a MyDatabaseOperator that when it used we connect to the database with the hook which needs the connection as a parameter.
+6. FileProcessor
+7. Backfill
 
 ### Real-World Context
 Rather than focusing on one technology, think about how data workflows are shceduled, and think about when running and ocrhestrating data workflows.
