@@ -54,7 +54,7 @@ Think through the following questions; by answering them you’ll touch every ma
     - metadata database - Postgresql or mySql, stores state of tasks, dags and variables, xcom data.
     - worker - which executrs the tasks giver by the scheduler.
          - CeleryExecutor - a task queue, The Celery Executor distributes the workload from the main application onto multiple celery workers with the help of a message broker such as RabbitMQ or Redis.
-         - KubernetesExecutor - The Celery Executor distributes the workload from the main application onto multiple celery workers with the help of a message broker such as RabbitMQ or Redis.
+         - KubernetesExecutor - Runs a fixed-single Pod as the scheduler that only requires access to the Kubernetes API. The pods only run when tasks are required to be executed, which helps to save resources when there are no jobs to run. In other executors, the workers are statically configured and are running all the time, regardless of workloads. 
          - LocalExecutor - Airflow tasks run locally within the scheduler process. (easy to use but limited in capabilities).
     - triggerer - executes deferred tasks in an asyncio event loop. If there are no deferred tasks this is not necessary.
     - plugins - extand airflow's functionality, a set of tools to parse Hive logs and expose Hive metadata.
