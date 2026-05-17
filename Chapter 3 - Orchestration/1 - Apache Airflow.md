@@ -80,7 +80,7 @@ Think through the following questions; by answering them you’ll touch every ma
 - I explained the jijna parsing earlier.
 
 5. **Airflow Critical Sections:** What is the "Critical Section" of the Scheduler? Describe the three primary "loops" or critical sections (DagRun Creation, Task Instance Creation, Task Scheduling).
-- Critical Section - is where there are multipule schedulers and part of the scheduling loop that does a number of calculations in memory (instead of round triping to the memory) we must ensure that only a single scheduleres in this "critical section" at once. The critical section is where TaskIntances go from scheduled state and are enqueued to the executor, whilst ensuring the various concurrency and pool limits are respected. How to obtain the critical section? By asking for a row-level write lock on every row of the Poll table
+- Critical Section - is where there are multipule schedulers and part of the scheduling loop that does a number of calculations in memory (instead of round triping to the memory) we must ensure that only a single scheduleres in this "critical section" at once. The critical section is where TaskIntances go from scheduled state and are enqueued to the executor, whilst ensuring the various concurrency and pool limits are respected. How to obtain the critical section? By asking for a row-level write lock on every row of the Poll table.
 
 ### Q&A Questions
 
@@ -108,6 +108,8 @@ Think through the following questions; by answering them you’ll touch every ma
 ...     extra={"this_param": "some val", "that_param": "other val*"}\
   The conn_id is a unique name and there are the typical parameters and the extras are written in json format.
 9. What is fernet key  - Fernet is an implementation of symmetric (also known as “secret key”) authenticated cryptography. The airflow.cfg file is generated with the default configuration and a Fernet key as `fernet_key` or also configure a fernet key using environment variable.
+10. Trigger rules in Airflow - `trigger_rule` is an argument of an operator which defines by which generated task get triggered. The defualt value is `all_success`  (all parents have succeeded). It can be also `all_failed`, `all_done`, `one_failed`, `one_success`, etc.
+11. Dynamic task mapping - a way for a workflow to create a number of tasks at runtime based upon current data, rather than the Dag author having to know in advance how many tasks would be needed.  
 
 ### Real-World Context
 Rather than focusing on one technology, think about how data workflows are shceduled, and think about when running and ocrhestrating data workflows.
