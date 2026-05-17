@@ -80,10 +80,7 @@ Think through the following questions; by answering them you’ll touch every ma
 - I explained the jijna parsing earlier.
 
 5. **Airflow Critical Sections:** What is the "Critical Section" of the Scheduler? Describe the three primary "loops" or critical sections (DagRun Creation, Task Instance Creation, Task Scheduling).
-- Critical Section - is where TaskInstances go from scheduled state and are enqueued to the executor, whilst ensuring the various concurrency and pool limits are respected. The critical section is obtained by asking for a row-level write lock on every row of the Pool table.
-- DagRun creation - 
-- Task Instance Creation - 
-- Task Scheduling - 
+- Critical Section - is where there are multipule schedulers and part of the scheduling loop that does a number of calculations in memory (instead of round triping to the memory) we must ensure that only a single scheduleres in this "critical section" at once. The critical section is where TaskIntances go from scheduled state and are enqueued to the executor, whilst ensuring the various concurrency and pool limits are respected. How to obtain the critical section? By asking for a row-level write lock on every row of the Poll table
 
 ### Q&A Questions
 
@@ -93,15 +90,24 @@ Think through the following questions; by answering them you’ll touch every ma
 - inlets - task parameter. contains the list of assets a specific task has access to.
 - outlets - task parameter. contains the list of assets a specific task produces updates to.
 3. Operator types: sensor, emptyOperator, taskSDK operator, deffered operator.
-4. Callback - component of logging and monitoring. Yo may want to invoke a callback when your Dag succeeds or fails.
+4. Callback - component of logging and monitoring. Yo may want to invoke a callback when your Dag succeeds or fails. Callbacks of Dag are functions which needs to apply in case of status of operator. For example if a task has failed the callback will be to send an email to the customer about it.
 5. Connections, Operators and Hooks (used to access an external systems)
 - Connections - Named configuration that stores credentials and endpoint information to the external system (instead of hard-coding passwords or tokens in our DAG). Connections can be reuse.
 - Hooks - Interface. An abstraction to how we access the external system. How we interact with this connection, retrieve the credentials from the Airflow connection object.
 - Operators - abstraction of the task. When we create operator, we can use the hook as part of the functionality of the operator. For example, we have a MyDatabaseOperator that when it used we connect to the database with the hook which needs the connection as a parameter.
-6. FileProcessor - 
 7. Backfill vs Catchup, designed to handle past DAG runs:
 - Backfill - manually triggering DAG runs for a specific past date range. `airflow dags backfill -s <START_DATE> -e <END_DATE> <DAG_NAME>`. Allows you to skip tasks that have already succeeded and rerunning those that need attention.
-- Catchup - automatically schedules DAG runs for all previous, unexecuted intervals when a DAG is first deployed or if it has been paused for a while. Used for ensuring continuity or don't miss any data in batch processing. 
+- Catchup - automatically schedules DAG runs for all previous, unexecuted intervals when a DAG is first deployed or if it has been paused for a while. Used for ensuring continuity or don't miss any data in batch processing.
+8. How are the connections looks like? c = Connection(
+...     conn_id="some_conn",
+...     conn_type="mysql",
+...     description="connection description",
+...     host="myhost.com",
+...     login="myname",
+...     password="mypassword",
+...     extra={"this_param": "some val", "that_param": "other val*"}\
+  The conn_id is a unique name and there are the typical parameters and the extras are written in json format.
+9. What is fernet key  - Fernet is an implementation of symmetric (also known as “secret key”) authenticated cryptography. The airflow.cfg file is generated with the default configuration and a Fernet key as `fernet_key` or also configure a fernet key using environment variable.
 
 ### Real-World Context
 Rather than focusing on one technology, think about how data workflows are shceduled, and think about when running and ocrhestrating data workflows.
